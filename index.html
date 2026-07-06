@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,822 +12,1029 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<!-- ======================================================
+  <!-- ======================================================
      SVG Sprite — أيقونات النظام
      ====================================================== -->
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none" id="svg-sprites">
-  <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
-    <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
-  </symbol>
-  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-  </symbol>
-  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-  </symbol>
-  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-  </symbol>
-  <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
-  </symbol>
-  <symbol id="i-bar-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-    <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
-  </symbol>
-  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-  </symbol>
-  <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
-    <rect x="9" y="3" width="6" height="4" rx="1"/>
-    <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/>
-  </symbol>
-  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="5"/>
-    <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-  </symbol>
-  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-  </symbol>
-  <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-    <polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/>
-  </symbol>
-  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/>
-  </symbol>
-  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-  </symbol>
-  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-  </symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-  </symbol>
-  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="3,6 5,6 21,6"/>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-    <path d="M10 11v6"/><path d="M14 11v6"/>
-    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-  </symbol>
-  <symbol id="i-excel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="3" width="20" height="18" rx="2"/>
-    <path d="M8 3v18"/><path d="M2 9h20"/><path d="M2 15h20"/>
-    <path d="M14 12l-3 4"/><path d="M11 12l3 4"/>
-  </symbol>
-  <symbol id="i-pdf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-    <polyline points="14,2 14,8 20,8"/>
-    <line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="11" y2="11"/>
-  </symbol>
-  <symbol id="i-template" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2"/>
-    <path d="M3 9h18"/><path d="M9 21V9"/>
-  </symbol>
-  <symbol id="i-table" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="4" width="20" height="16" rx="2"/>
-    <path d="M2 10h20"/><path d="M8 4v16"/><path d="M14 4v16"/>
-  </symbol>
-  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-  </symbol>
-  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
-  </symbol>
-  <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-  </symbol>
-  <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-  </symbol>
-  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-  </symbol>
-  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-  </symbol>
-  <symbol id="i-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
-    <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
-    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
-  </symbol>
-  <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="20,12 20,22 4,22 4,12"/>
-    <rect x="2" y="7" width="20" height="5"/>
-    <line x1="12" y1="22" x2="12" y2="7"/>
-    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
-  </symbol>
-</svg>
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" id="svg-sprites">
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17,8 12,3 7,8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </symbol>
+    <symbol id="i-bar-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+      <line x1="2" y1="20" x2="22" y2="20" />
+    </symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </symbol>
+    <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+      <rect x="9" y="3" width="6" height="4" rx="1" />
+      <line x1="9" y1="12" x2="15" y2="12" />
+      <line x1="9" y1="16" x2="12" y2="16" />
+    </symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16,17 21,12 16,7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7,10 12,15 17,10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <polyline points="3,6 5,6 21,6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </symbol>
+    <symbol id="i-excel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <rect x="2" y="3" width="20" height="18" rx="2" />
+      <path d="M8 3v18" />
+      <path d="M2 9h20" />
+      <path d="M2 15h20" />
+      <path d="M14 12l-3 4" />
+      <path d="M11 12l3 4" />
+    </symbol>
+    <symbol id="i-pdf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14,2 14,8 20,8" />
+      <line x1="9" y1="15" x2="15" y2="15" />
+      <line x1="9" y1="11" x2="11" y2="11" />
+    </symbol>
+    <symbol id="i-template" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M9 21V9" />
+    </symbol>
+    <symbol id="i-table" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M2 10h20" />
+      <path d="M8 4v16" />
+      <path d="M14 4v16" />
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22,4 12,14.01 9,11.01" />
+    </symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+    </symbol>
+    <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <path
+        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+      <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+    </symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+      stroke-linejoin="round">
+      <polyline points="20,12 20,22 4,22 4,12" />
+      <rect x="2" y="7" width="20" height="5" />
+      <line x1="12" y1="22" x2="12" y2="7" />
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+    </symbol>
+  </svg>
 
-<!-- ======================================================
+  <!-- ======================================================
      شاشة تسجيل الدخول
      ====================================================== -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="login-logo-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="36" height="36">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
+  <div id="login-screen">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="login-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" width="36" height="36">
+            <path
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+        </div>
+        <h1>نظام إدارة المساعدات</h1>
+        <p>إدارة المستفيدين · منع التكرار · التقارير</p>
       </div>
-      <h1>نظام إدارة المساعدات</h1>
-      <p>إدارة المستفيدين · منع التكرار · التقارير</p>
+
+      <form id="login-form" autocomplete="on">
+        <div class="form-group">
+          <label for="login-email">البريد الإلكتروني</label>
+          <div class="input-icon-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            <input type="email" id="login-email" class="form-input" placeholder="example@email.com" autocomplete="email"
+              required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="login-password">كلمة المرور</label>
+          <div class="input-icon-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••"
+              autocomplete="current-password" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:8px;">
+          تسجيل الدخول
+        </button>
+      </form>
+      <p class="login-footer">تواصل مع مدير النظام للحصول على حساب</p>
     </div>
-
-    <form id="login-form" autocomplete="on">
-      <div class="form-group">
-        <label for="login-email">البريد الإلكتروني</label>
-        <div class="input-icon-wrapper">
-          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-            <polyline points="22,6 12,13 2,6"/>
-          </svg>
-          <input type="email" id="login-email" class="form-input" placeholder="example@email.com" autocomplete="email" required>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="login-password">كلمة المرور</label>
-        <div class="input-icon-wrapper">
-          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <input type="password" id="login-password" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:8px;">
-        تسجيل الدخول
-      </button>
-    </form>
-    <p class="login-footer">تواصل مع مدير النظام للحصول على حساب</p>
   </div>
-</div>
 
-<!-- ======================================================
+  <!-- ======================================================
      التطبيق الرئيسي
      ====================================================== -->
-<div id="app-screen" style="display:none;">
+  <div id="app-screen" style="display:none;">
 
-  <!-- القائمة الجانبية -->
-  <aside id="sidebar">
-    <div class="sidebar-logo">
-      <div class="sidebar-logo-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-      </div>
-      <div class="sidebar-logo-text">
-        <h2>نظام المساعدات</h2>
-        <p>الإنسانية</p>
-      </div>
-    </div>
-
-    <nav>
-      <div class="sidebar-section-label">القائمة الرئيسية</div>
-
-      <button class="nav-link active" data-page="dashboard">
-        <svg class="nav-icon"><use href="#i-grid"/></svg>
-        <span>لوحة التحكم</span>
-      </button>
-      <button class="nav-link" data-page="projects">
-        <svg class="nav-icon"><use href="#i-folder"/></svg>
-        <span>المشاريع</span>
-      </button>
-      <button class="nav-link" data-page="beneficiaries">
-        <svg class="nav-icon"><use href="#i-users"/></svg>
-        <span>المستفيدون</span>
-      </button>
-      <button class="nav-link" data-page="search">
-        <svg class="nav-icon"><use href="#i-search"/></svg>
-        <span>البحث</span>
-      </button>
-
-      <div class="sidebar-section-label">الأدوات</div>
-
-      <button class="nav-link" data-page="import" id="nav-import">
-        <svg class="nav-icon"><use href="#i-upload"/></svg>
-        <span>استيراد مشروع</span>
-      </button>
-      <button class="nav-link" data-page="reports">
-        <svg class="nav-icon"><use href="#i-bar-chart"/></svg>
-        <span>التقارير</span>
-      </button>
-
-      <div class="sidebar-section-label">الإدارة</div>
-
-      <button class="nav-link hidden" data-page="users" id="nav-users">
-        <svg class="nav-icon"><use href="#i-user"/></svg>
-        <span>المستخدمون</span>
-      </button>
-      <button class="nav-link hidden" data-page="audit" id="nav-audit">
-        <svg class="nav-icon"><use href="#i-clipboard"/></svg>
-        <span>سجل العمليات</span>
-      </button>
-    </nav>
-
-    <div class="sidebar-footer">
-      <div class="user-info-card">
-        <div class="user-avatar" id="user-avatar-text">م</div>
-        <div class="user-details">
-          <div class="user-name" id="user-name">اسم المستخدم</div>
-          <div class="user-role-label" id="user-role">الدور</div>
+    <!-- القائمة الجانبية -->
+    <aside id="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+            stroke-linejoin="round" width="22" height="22">
+            <path
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+        </div>
+        <div class="sidebar-logo-text">
+          <h2>نظام المساعدات</h2>
+          <p>الإنسانية</p>
         </div>
       </div>
-      <button id="logout-btn" class="btn btn-ghost" style="width:100%; gap:10px;">
-        <svg width="16" height="16"><use href="#i-logout"/></svg>
-        تسجيل الخروج
-      </button>
-    </div>
-  </aside>
 
-  <div id="sidebar-overlay"></div>
+      <nav>
+        <div class="sidebar-section-label">القائمة الرئيسية</div>
 
-  <!-- المحتوى الرئيسي -->
-  <div id="main-content">
+        <button class="nav-link active" data-page="dashboard">
+          <svg class="nav-icon">
+            <use href="#i-grid" />
+          </svg>
+          <span>لوحة التحكم</span>
+        </button>
+        <button class="nav-link" data-page="projects">
+          <svg class="nav-icon">
+            <use href="#i-folder" />
+          </svg>
+          <span>المشاريع</span>
+        </button>
+        <button class="nav-link" data-page="beneficiaries">
+          <svg class="nav-icon">
+            <use href="#i-users" />
+          </svg>
+          <span>المستفيدون</span>
+        </button>
+        <button class="nav-link" data-page="search">
+          <svg class="nav-icon">
+            <use href="#i-search" />
+          </svg>
+          <span>البحث</span>
+        </button>
 
-    <!-- رأس الصفحة -->
-    <header id="top-bar">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <button id="menu-toggle" aria-label="القائمة">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+        <div class="sidebar-section-label">الأدوات</div>
+
+        <button class="nav-link" data-page="import" id="nav-import">
+          <svg class="nav-icon">
+            <use href="#i-upload" />
+          </svg>
+          <span>استيراد مشروع</span>
+        </button>
+        <button class="nav-link" data-page="reports">
+          <svg class="nav-icon">
+            <use href="#i-bar-chart" />
+          </svg>
+          <span>التقارير</span>
+        </button>
+
+        <div class="sidebar-section-label">الإدارة</div>
+
+        <button class="nav-link hidden" data-page="users" id="nav-users">
+          <svg class="nav-icon">
+            <use href="#i-user" />
+          </svg>
+          <span>المستخدمون</span>
+        </button>
+        <button class="nav-link hidden" data-page="audit" id="nav-audit">
+          <svg class="nav-icon">
+            <use href="#i-clipboard" />
+          </svg>
+          <span>سجل العمليات</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info-card">
+          <div class="user-avatar" id="user-avatar-text">م</div>
+          <div class="user-details">
+            <div class="user-name" id="user-name">اسم المستخدم</div>
+            <div class="user-role-label" id="user-role">الدور</div>
+          </div>
+        </div>
+        <button id="logout-btn" class="btn btn-ghost" style="width:100%; gap:10px;">
+          <svg width="16" height="16">
+            <use href="#i-logout" />
+          </svg>
+          تسجيل الخروج
+        </button>
+      </div>
+    </aside>
+
+    <div id="sidebar-overlay"></div>
+
+    <!-- المحتوى الرئيسي -->
+    <div id="main-content">
+
+      <!-- رأس الصفحة -->
+      <header id="top-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button id="menu-toggle" aria-label="القائمة">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <div class="top-bar-title" id="page-title">لوحة التحكم</div>
+        </div>
+        <div class="top-bar-actions">
+          <span id="top-date" class="top-date"></span>
+          <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" title="تبديل الوضع">
+            <svg width="18" height="18">
+              <use href="#i-sun" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- منطقة المحتوى -->
+      <div id="content-area">
+
+        <!-- ════════════ لوحة التحكم ════════════ -->
+        <section id="page-dashboard" class="page active">
+          <div class="page-loader">
+            <div class="spinner"></div><span>جاري التحميل...</span>
+          </div>
+
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">لوحة التحكم</h1>
+              <p class="page-subtitle">نظرة عامة على جميع بيانات المساعدات</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="navigate('import')">
+              <svg width="16" height="16">
+                <use href="#i-plus" />
+              </svg> مشروع جديد
+            </button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon blue">
+                <svg width="26" height="26">
+                  <use href="#i-users" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value" id="stat-beneficiaries">0</div>
+                <div class="stat-label">إجمالي المستفيدين الفريدين</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green">
+                <svg width="26" height="26">
+                  <use href="#i-folder" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value" id="stat-projects">0</div>
+                <div class="stat-label">إجمالي المشاريع</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon orange">
+                <svg width="26" height="26">
+                  <use href="#i-gift" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value" id="stat-benefits">0</div>
+                <div class="stat-label">إجمالي الاستفادات</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon red">
+                <svg width="26" height="26">
+                  <use href="#i-x-circle" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value" id="stat-deleted">0</div>
+                <div class="stat-label">سجلات محذوفة (تكرار)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="chart-card">
+              <h3>المستفيدون المقبولون لكل مشروع</h3>
+              <div class="chart-container"><canvas id="projectsChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <h3>توزيع البيانات</h3>
+              <div class="chart-container"><canvas id="duplicatesChart"></canvas></div>
+            </div>
+          </div>
+
+          <div class="charts-grid" style="grid-template-columns: 1.5fr 1fr;">
+            <div class="chart-card">
+              <h3>اتجاه الاستيراد عبر المشاريع</h3>
+              <div class="chart-container"><canvas id="trendChart"></canvas></div>
+            </div>
+            <div class="table-card">
+              <div class="table-header">
+                <h3>آخر المشاريع</h3>
+                <button class="btn btn-ghost btn-sm" onclick="navigate('projects')">عرض الكل</button>
+              </div>
+              <div style="padding:0 16px;">
+                <div id="recent-projects-list"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════ المشاريع ════════════ -->
+        <section id="page-projects" class="page">
+          <div class="page-loader">
+            <div class="spinner"></div><span>جاري التحميل...</span>
+          </div>
+
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">المشاريع</h1>
+              <p class="page-subtitle">جميع مشاريع المساعدات الإنسانية</p>
+            </div>
+            <button class="btn btn-primary" onclick="navigate('import')" id="btn-new-project">
+              <svg width="16" height="16">
+                <use href="#i-plus" />
+              </svg> مشروع جديد
+            </button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-header">
+              <h3>قائمة المشاريع</h3>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>اسم المشروع</th>
+                    <th>تاريخ الإنشاء</th>
+                    <th class="text-center">إجمالي الاستيراد</th>
+                    <th class="text-center">تكرار داخلي</th>
+                    <th class="text-center">مستفيد سابق</th>
+                    <th class="text-center">المقبولون</th>
+                    <th>العمليات</th>
+                  </tr>
+                </thead>
+                <tbody id="projects-tbody">
+                  <tr>
+                    <td colspan="7" class="empty-cell">جاري التحميل...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════ استيراد مشروع ════════════ -->
+        <section id="page-import" class="page">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">استيراد مشروع جديد</h1>
+              <p class="page-subtitle">رفع ملف Excel ومعالجة بيانات المستفيدين تلقائياً</p>
+            </div>
+          </div>
+
+          <!-- بطاقة تحميل النموذج -->
+          <div class="template-download-card">
+            <div class="template-download-icon">
+              <svg width="28" height="28">
+                <use href="#i-template" />
+              </svg>
+            </div>
+            <div class="template-download-info">
+              <h4>نموذج Excel الرسمي المُعتمد</h4>
+              <p>حمّل النموذج الرسمي قبل إدخال البيانات لضمان صحة الأعمدة وتجنب أخطاء الاستيراد.
+                النموذج يحتوي على مثال توضيحي وتعليمات الاستخدام.</p>
+            </div>
+            <button class="btn btn-success" onclick="downloadTemplate()">
+              <svg width="16" height="16">
+                <use href="#i-download" />
+              </svg>
+              تحميل النموذج
+            </button>
+          </div>
+
+          <!-- قسم المشاريع السابقة للمقارنة -->
+          <div class="prev-projects-card" id="prev-projects-card">
+            <div class="prev-projects-header" onclick="togglePrevProjects()">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                <h4>المشاريع السابقة — اختر للمقارنة</h4>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span id="compare-selected-count" style="font-size:0.8rem;color:var(--text-muted);">لم يتم تحديد مشاريع
+                  للمقارنة</span>
+                <svg class="prev-projects-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6,9 12,15 18,9" />
+                </svg>
+              </div>
+            </div>
+            <div class="prev-projects-body" id="prev-projects-body">
+              <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;">
+                حدّد المشاريع التي تريد مقارنة ملف الاستيراد الجديد بها — النظام سيتحقق من عدم تكرار المستفيدين معها.
+              </p>
+              <div id="prev-projects-list">
+                <p style="color:var(--text-muted);font-size:0.85rem;">جاري تحميل المشاريع...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="import-card">
+            <form id="import-form">
+              <div class="form-group">
+                <label for="project-name">اسم المشروع</label>
+                <input type="text" id="project-name" class="form-input"
+                  placeholder="مثال: مشروع السلة الغذائية - يناير 2025" required>
+              </div>
+
+              <div class="form-group">
+                <label>ملف المستفيدين (Excel)</label>
+                <div class="file-upload-area" id="file-drop-zone">
+                  <input type="file" id="project-file" accept=".xlsx,.xls" onchange="handleFileChange(this)">
+                  <div class="file-upload-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                      stroke-linecap="round" stroke-linejoin="round" opacity="0.4">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17,8 12,3 7,8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                  </div>
+                  <div class="file-upload-text">اسحب الملف هنا أو انقر للاختيار</div>
+                  <div class="file-upload-hint">.xlsx أو .xls فقط</div>
+                  <span id="file-label"></span>
+                </div>
+                <div id="file-preview"></div>
+              </div>
+
+              <!-- تنبيه المعالجة التلقائية -->
+              <div class="import-info-box warning">
+                <svg width="18" height="18" style="flex-shrink:0;">
+                  <use href="#i-alert-triangle" />
+                </svg>
+                <div>
+                  <strong>سيقوم النظام تلقائياً بـ:</strong>
+                  <ul>
+                    <li>تنظيف الصفوف الفارغة وتوحيد النصوص وأرقام الجوال</li>
+                    <li>اكتشاف التكرارات داخل الملف (رقم الهوية / الاسم + الجوال)</li>
+                    <li>مقارنة البيانات مع جميع المشاريع السابقة</li>
+                    <li>إضافة المستفيدين الجدد فقط إلى قاعدة البيانات</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- أعمدة الملف -->
+              <div class="import-info-box info">
+                <svg width="18" height="18" style="flex-shrink:0;">
+                  <use href="#i-info" />
+                </svg>
+                <div>
+                  <strong>أعمدة الملف المطلوبة:</strong>
+                  <div class="columns-preview">
+                    <span class="col-badge required">الاسم الرباعي</span>
+                    <span class="col-badge">رقم الهوية</span>
+                    <span class="col-badge">رقم الجوال</span>
+                    <span class="col-badge">عدد أفراد الأسرة</span>
+                    <span class="col-badge">اسم المخيم</span>
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" id="import-submit-btn" class="btn btn-primary btn-lg" style="width:100%;"
+                onclick="startImport()">
+                <svg width="18" height="18">
+                  <use href="#i-rocket" />
+                </svg>
+                بدء الاستيراد والمعالجة
+              </button>
+            </form>
+          </div>
+
+          <!-- شريط التقدم -->
+          <div id="import-progress" class="progress-section hidden" style="max-width:750px;margin:20px auto 0;">
+            <div class="progress-header">
+              <div class="progress-spinner">
+                <div class="spinner"></div>
+              </div>
+              <h3>جاري المعالجة...</h3>
+            </div>
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <p id="progress-message">جاري قراءة الملف...</p>
+          </div>
+
+          <!-- نتائج الاستيراد -->
+          <div id="import-result" class="hidden" style="max-width:750px;margin:20px auto 0;">
+            <div class="table-card">
+              <div class="table-header">
+                <h3>
+                  <svg width="18" height="18" style="color:var(--accent-green);vertical-align:middle;margin-left:6px;">
+                    <use href="#i-check-circle" />
+                  </svg>
+                  نتائج الاستيراد
+                </h3>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-ghost btn-sm" onclick="navigate('projects')">عرض المشاريع</button>
+                  <button class="btn btn-ghost btn-sm" onclick="navigate('import')">استيراد آخر</button>
+                </div>
+              </div>
+              <div id="import-result-content" style="padding:20px;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════ المستفيدون ════════════ -->
+        <section id="page-beneficiaries" class="page">
+          <div class="page-loader">
+            <div class="spinner"></div><span>جاري التحميل...</span>
+          </div>
+
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">المستفيدون</h1>
+              <p class="page-subtitle">قاعدة البيانات الموحدة لجميع المستفيدين</p>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-ghost btn-sm" onclick="exportReport('all-excel')">
+                <svg width="15" height="15">
+                  <use href="#i-excel" />
+                </svg> Excel
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="exportReport('all-pdf')">
+                <svg width="15" height="15">
+                  <use href="#i-pdf" />
+                </svg> PDF
+              </button>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-header">
+              <h3>قائمة المستفيدين</h3>
+              <div class="search-bar">
+                <div class="search-input-wrapper">
+                  <svg class="search-icon" width="16" height="16">
+                    <use href="#i-search" />
+                  </svg>
+                  <input type="text" id="beneficiaries-search" class="search-input"
+                    placeholder="بحث بالاسم، الهوية، الجوال، المخيم...">
+                </div>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>الاسم الرباعي</th>
+                    <th>رقم الهوية</th>
+                    <th>رقم الجوال</th>
+                    <th class="text-center">أفراد الأسرة</th>
+                    <th>المخيم</th>
+                    <th class="text-center">الاستفادات</th>
+                    <th>المشاريع</th>
+                    <th>العمليات</th>
+                  </tr>
+                </thead>
+                <tbody id="beneficiaries-tbody">
+                  <tr>
+                    <td colspan="8" class="empty-cell">جاري التحميل...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════ البحث ════════════ -->
+        <section id="page-search" class="page">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">البحث المتقدم</h1>
+              <p class="page-subtitle">ابحث عن مستفيد عبر جميع المشاريع</p>
+            </div>
+          </div>
+
+          <div class="table-card" style="margin-bottom:24px;">
+            <div style="padding:24px;">
+              <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+                <div style="flex:1;min-width:280px;">
+                  <label class="form-label">كلمة البحث</label>
+                  <div class="search-input-wrapper" style="max-width:100%;">
+                    <svg class="search-icon" width="16" height="16">
+                      <use href="#i-search" />
+                    </svg>
+                    <input type="text" id="search-input" class="search-input" style="width:100%;"
+                      placeholder="الاسم، رقم الهوية، الجوال، المخيم..."
+                      onkeydown="if(event.key==='Enter') performSearch()">
+                  </div>
+                </div>
+                <button class="btn btn-primary" onclick="performSearch()">
+                  <svg width="16" height="16">
+                    <use href="#i-search" />
+                  </svg> بحث
+                </button>
+              </div>
+              <p style="font-size:0.78rem;color:var(--text-muted);margin-top:12px;">
+                يدعم البحث الجزئي — لا حاجة لإدخال الاسم كاملاً
+              </p>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-header">
+              <h3>نتائج البحث</h3>
+              <span id="search-count" style="font-size:0.85rem;color:var(--text-secondary);"></span>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>الاسم</th>
+                    <th>رقم الهوية</th>
+                    <th>رقم الجوال</th>
+                    <th>أفراد الأسرة</th>
+                    <th>المخيم</th>
+                    <th class="text-center">الاستفادات</th>
+                    <th>عرض</th>
+                  </tr>
+                </thead>
+                <tbody id="search-results-tbody">
+                  <tr>
+                    <td colspan="7" class="empty-cell">أدخل كلمة للبحث</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════ التقارير ════════════ -->
+        <section id="page-reports" class="page">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">التقارير</h1>
+              <p class="page-subtitle">تصدير التقارير بصيغ Excel و PDF</p>
+            </div>
+          </div>
+
+          <div class="reports-grid">
+            <div class="report-card">
+              <div class="report-icon-wrap blue">
+                <svg width="28" height="28">
+                  <use href="#i-users" />
+                </svg>
+              </div>
+              <div class="report-title">تقرير جميع المستفيدين</div>
+              <p class="report-description">قائمة كاملة بجميع المستفيدين الفريدين مع تفاصيلهم وعدد استفاداتهم</p>
+              <div class="report-actions">
+                <button class="btn btn-success btn-sm" onclick="exportReport('all-excel')">
+                  <svg width="14" height="14">
+                    <use href="#i-excel" />
+                  </svg> Excel
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="exportReport('all-pdf')">
+                  <svg width="14" height="14">
+                    <use href="#i-pdf" />
+                  </svg> PDF
+                </button>
+              </div>
+            </div>
+
+            <div class="report-card">
+              <div class="report-icon-wrap red">
+                <svg width="28" height="28">
+                  <use href="#i-x-circle" />
+                </svg>
+              </div>
+              <div class="report-title">تقرير السجلات المحذوفة</div>
+              <p class="report-description">جميع السجلات المحذوفة بسبب التكرار الداخلي أو وجودها في مشاريع سابقة</p>
+              <div class="report-actions">
+                <button class="btn btn-danger btn-sm" onclick="exportReport('deleted-excel')">
+                  <svg width="14" height="14">
+                    <use href="#i-excel" />
+                  </svg> Excel
+                </button>
+              </div>
+            </div>
+
+            <div class="report-card">
+              <div class="report-icon-wrap orange">
+                <svg width="28" height="28">
+                  <use href="#i-bar-chart" />
+                </svg>
+              </div>
+              <div class="report-title">تقرير الاستفادات المتعددة</div>
+              <p class="report-description">المستفيدون الذين استفادوا من أكثر من مشروع مرتبة تنازلياً</p>
+              <div class="report-actions">
+                <button class="btn btn-success btn-sm" onclick="exportReport('benefits-excel')">
+                  <svg width="14" height="14">
+                    <use href="#i-excel" />
+                  </svg> Excel
+                </button>
+              </div>
+            </div>
+
+            <div class="report-card">
+              <div class="report-icon-wrap green">
+                <svg width="28" height="28">
+                  <use href="#i-template" />
+                </svg>
+              </div>
+              <div class="report-title">نموذج الاستيراد</div>
+              <p class="report-description">تحميل نموذج Excel الرسمي لإدخال بيانات المستفيدين قبل رفعه إلى النظام</p>
+              <div class="report-actions">
+                <button class="btn btn-success btn-sm" onclick="downloadTemplate()">
+                  <svg width="14" height="14">
+                    <use href="#i-download" />
+                  </svg> تحميل النموذج
+                </button>
+              </div>
+            </div>
+
+            <div class="report-card">
+              <div class="report-icon-wrap purple">
+                <svg width="28" height="28">
+                  <use href="#i-folder" />
+                </svg>
+              </div>
+              <div class="report-title">تقرير مشروع محدد</div>
+              <p class="report-description">تصدير بيانات مستفيدي مشروع بعينه — اذهب إلى المشاريع واختر التصدير</p>
+              <div class="report-actions">
+                <button class="btn btn-ghost btn-sm" onclick="navigate('projects')">
+                  <svg width="14" height="14">
+                    <use href="#i-folder" />
+                  </svg> فتح المشاريع
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════ المستخدمون ════════════ -->
+        <section id="page-users" class="page">
+          <div class="page-loader">
+            <div class="spinner"></div><span>جاري التحميل...</span>
+          </div>
+
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">إدارة المستخدمين</h1>
+              <p class="page-subtitle">إضافة وتعديل حسابات المستخدمين وصلاحياتهم</p>
+            </div>
+            <button class="btn btn-primary" onclick="showAddUserForm()">
+              <svg width="16" height="16">
+                <use href="#i-plus" />
+              </svg> إضافة مستخدم
+            </button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-header">
+              <h3>قائمة المستخدمين</h3>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>الاسم</th>
+                    <th>البريد الإلكتروني</th>
+                    <th>الدور</th>
+                    <th>الحالة</th>
+                    <th>تاريخ الإضافة</th>
+                    <th>العمليات</th>
+                  </tr>
+                </thead>
+                <tbody id="users-tbody">
+                  <tr>
+                    <td colspan="6" class="empty-cell">جاري التحميل...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════ سجل العمليات ════════════ -->
+        <section id="page-audit" class="page">
+          <div class="page-loader">
+            <div class="spinner"></div><span>جاري التحميل...</span>
+          </div>
+
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">سجل العمليات</h1>
+              <p class="page-subtitle">تتبع جميع العمليات التي تمت في النظام</p>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>التاريخ والوقت</th>
+                    <th>العملية</th>
+                    <th>المستخدم</th>
+                    <th>النوع</th>
+                    <th>التفاصيل</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-tbody">
+                  <tr>
+                    <td colspan="5" class="empty-cell">جاري التحميل...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /content-area -->
+    </div><!-- /main-content -->
+  </div><!-- /app-screen -->
+
+  <!-- المودال العام -->
+  <div id="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="modal-title">التفاصيل</h3>
+        <button class="modal-close" onclick="closeModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
-        <div class="top-bar-title" id="page-title">لوحة التحكم</div>
       </div>
-      <div class="top-bar-actions">
-        <span id="top-date" class="top-date"></span>
-        <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" title="تبديل الوضع">
-          <svg width="18" height="18"><use href="#i-sun"/></svg>
-        </button>
-      </div>
-    </header>
+      <div id="modal-body"></div>
+    </div>
+  </div>
 
-    <!-- منطقة المحتوى -->
-    <div id="content-area">
-
-      <!-- ════════════ لوحة التحكم ════════════ -->
-      <section id="page-dashboard" class="page active">
-        <div class="page-loader"><div class="spinner"></div><span>جاري التحميل...</span></div>
-
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">لوحة التحكم</h1>
-            <p class="page-subtitle">نظرة عامة على جميع بيانات المساعدات</p>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="navigate('import')">
-            <svg width="16" height="16"><use href="#i-plus"/></svg> مشروع جديد
-          </button>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon blue">
-              <svg width="26" height="26"><use href="#i-users"/></svg>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value" id="stat-beneficiaries">0</div>
-              <div class="stat-label">إجمالي المستفيدين الفريدين</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon green">
-              <svg width="26" height="26"><use href="#i-folder"/></svg>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value" id="stat-projects">0</div>
-              <div class="stat-label">إجمالي المشاريع</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon orange">
-              <svg width="26" height="26"><use href="#i-gift"/></svg>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value" id="stat-benefits">0</div>
-              <div class="stat-label">إجمالي الاستفادات</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon red">
-              <svg width="26" height="26"><use href="#i-x-circle"/></svg>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value" id="stat-deleted">0</div>
-              <div class="stat-label">سجلات محذوفة (تكرار)</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="charts-grid">
-          <div class="chart-card">
-            <h3>المستفيدون المقبولون لكل مشروع</h3>
-            <div class="chart-container"><canvas id="projectsChart"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <h3>توزيع البيانات</h3>
-            <div class="chart-container"><canvas id="duplicatesChart"></canvas></div>
-          </div>
-        </div>
-
-        <div class="charts-grid" style="grid-template-columns: 1.5fr 1fr;">
-          <div class="chart-card">
-            <h3>اتجاه الاستيراد عبر المشاريع</h3>
-            <div class="chart-container"><canvas id="trendChart"></canvas></div>
-          </div>
-          <div class="table-card">
-            <div class="table-header">
-              <h3>آخر المشاريع</h3>
-              <button class="btn btn-ghost btn-sm" onclick="navigate('projects')">عرض الكل</button>
-            </div>
-            <div style="padding:0 16px;"><div id="recent-projects-list"></div></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ════════════ المشاريع ════════════ -->
-      <section id="page-projects" class="page">
-        <div class="page-loader"><div class="spinner"></div><span>جاري التحميل...</span></div>
-
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">المشاريع</h1>
-            <p class="page-subtitle">جميع مشاريع المساعدات الإنسانية</p>
-          </div>
-          <button class="btn btn-primary" onclick="navigate('import')" id="btn-new-project">
-            <svg width="16" height="16"><use href="#i-plus"/></svg> مشروع جديد
-          </button>
-        </div>
-
-        <div class="table-card">
-          <div class="table-header">
-            <h3>قائمة المشاريع</h3>
-          </div>
-          <div class="table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>اسم المشروع</th><th>تاريخ الإنشاء</th>
-                  <th class="text-center">إجمالي الاستيراد</th>
-                  <th class="text-center">تكرار داخلي</th>
-                  <th class="text-center">مستفيد سابق</th>
-                  <th class="text-center">المقبولون</th>
-                  <th>العمليات</th>
-                </tr>
-              </thead>
-              <tbody id="projects-tbody">
-                <tr><td colspan="7" class="empty-cell">جاري التحميل...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ════════════ استيراد مشروع ════════════ -->
-      <section id="page-import" class="page">
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">استيراد مشروع جديد</h1>
-            <p class="page-subtitle">رفع ملف Excel ومعالجة بيانات المستفيدين تلقائياً</p>
-          </div>
-        </div>
-
-        <!-- بطاقة تحميل النموذج -->
-        <div class="template-download-card">
-          <div class="template-download-icon">
-            <svg width="28" height="28"><use href="#i-template"/></svg>
-          </div>
-          <div class="template-download-info">
-            <h4>نموذج Excel الرسمي المُعتمد</h4>
-            <p>حمّل النموذج الرسمي قبل إدخال البيانات لضمان صحة الأعمدة وتجنب أخطاء الاستيراد.
-               النموذج يحتوي على مثال توضيحي وتعليمات الاستخدام.</p>
-          </div>
-          <button class="btn btn-success" onclick="downloadTemplate()">
-            <svg width="16" height="16"><use href="#i-download"/></svg>
-            تحميل النموذج
-          </button>
-        </div>
-
-        <!-- قسم المشاريع السابقة للمقارنة -->
-        <div class="prev-projects-card" id="prev-projects-card">
-          <div class="prev-projects-header" onclick="togglePrevProjects()">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              <h4>المشاريع السابقة — اختر للمقارنة</h4>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span id="compare-selected-count" style="font-size:0.8rem;color:var(--text-muted);">لم يتم تحديد مشاريع للمقارنة</span>
-              <svg class="prev-projects-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"/></svg>
-            </div>
-          </div>
-          <div class="prev-projects-body" id="prev-projects-body">
-            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;">
-              حدّد المشاريع التي تريد مقارنة ملف الاستيراد الجديد بها — النظام سيتحقق من عدم تكرار المستفيدين معها.
-            </p>
-            <div id="prev-projects-list">
-              <p style="color:var(--text-muted);font-size:0.85rem;">جاري تحميل المشاريع...</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="import-card">
-          <form id="import-form">
-            <div class="form-group">
-              <label for="project-name">اسم المشروع</label>
-              <input type="text" id="project-name" class="form-input"
-                placeholder="مثال: مشروع السلة الغذائية - يناير 2025" required>
-            </div>
-
-            <div class="form-group">
-              <label>ملف المستفيدين (Excel)</label>
-              <div class="file-upload-area" id="file-drop-zone">
-                <input type="file" id="project-file" accept=".xlsx,.xls" onchange="handleFileChange(this)">
-                <div class="file-upload-icon">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.4">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                  </svg>
-                </div>
-                <div class="file-upload-text">اسحب الملف هنا أو انقر للاختيار</div>
-                <div class="file-upload-hint">.xlsx أو .xls فقط</div>
-                <span id="file-label"></span>
-              </div>
-              <div id="file-preview"></div>
-            </div>
-
-            <!-- تنبيه المعالجة التلقائية -->
-            <div class="import-info-box warning">
-              <svg width="18" height="18" style="flex-shrink:0;"><use href="#i-alert-triangle"/></svg>
-              <div>
-                <strong>سيقوم النظام تلقائياً بـ:</strong>
-                <ul>
-                  <li>تنظيف الصفوف الفارغة وتوحيد النصوص وأرقام الجوال</li>
-                  <li>اكتشاف التكرارات داخل الملف (رقم الهوية / الاسم + الجوال)</li>
-                  <li>مقارنة البيانات مع جميع المشاريع السابقة</li>
-                  <li>إضافة المستفيدين الجدد فقط إلى قاعدة البيانات</li>
-                </ul>
-              </div>
-            </div>
-
-            <!-- أعمدة الملف -->
-            <div class="import-info-box info">
-              <svg width="18" height="18" style="flex-shrink:0;"><use href="#i-info"/></svg>
-              <div>
-                <strong>أعمدة الملف المطلوبة:</strong>
-                <div class="columns-preview">
-                  <span class="col-badge required">الاسم الرباعي</span>
-                  <span class="col-badge">رقم الهوية</span>
-                  <span class="col-badge">رقم الجوال</span>
-                  <span class="col-badge">عدد أفراد الأسرة</span>
-                  <span class="col-badge">اسم المخيم</span>
-                </div>
-              </div>
-            </div>
-
-            <button type="button" id="import-submit-btn" class="btn btn-primary btn-lg" style="width:100%;" onclick="startImport()">
-              <svg width="18" height="18"><use href="#i-rocket"/></svg>
-              بدء الاستيراد والمعالجة
-            </button>
-          </form>
-        </div>
-
-        <!-- شريط التقدم -->
-        <div id="import-progress" class="progress-section hidden" style="max-width:750px;margin:20px auto 0;">
-          <div class="progress-header">
-            <div class="progress-spinner"><div class="spinner"></div></div>
-            <h3>جاري المعالجة...</h3>
-          </div>
-          <div class="progress-bar-wrapper">
-            <div class="progress-bar" id="progress-bar"></div>
-          </div>
-          <p id="progress-message">جاري قراءة الملف...</p>
-        </div>
-
-        <!-- نتائج الاستيراد -->
-        <div id="import-result" class="hidden" style="max-width:750px;margin:20px auto 0;">
-          <div class="table-card">
-            <div class="table-header">
-              <h3>
-                <svg width="18" height="18" style="color:var(--accent-green);vertical-align:middle;margin-left:6px;"><use href="#i-check-circle"/></svg>
-                نتائج الاستيراد
-              </h3>
-              <div style="display:flex;gap:8px;">
-                <button class="btn btn-ghost btn-sm" onclick="navigate('projects')">عرض المشاريع</button>
-                <button class="btn btn-ghost btn-sm" onclick="navigate('import')">استيراد آخر</button>
-              </div>
-            </div>
-            <div id="import-result-content" style="padding:20px;"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ════════════ المستفيدون ════════════ -->
-      <section id="page-beneficiaries" class="page">
-        <div class="page-loader"><div class="spinner"></div><span>جاري التحميل...</span></div>
-
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">المستفيدون</h1>
-            <p class="page-subtitle">قاعدة البيانات الموحدة لجميع المستفيدين</p>
-          </div>
-          <div style="display:flex;gap:10px;">
-            <button class="btn btn-ghost btn-sm" onclick="exportReport('all-excel')">
-              <svg width="15" height="15"><use href="#i-excel"/></svg> Excel
-            </button>
-            <button class="btn btn-ghost btn-sm" onclick="exportReport('all-pdf')">
-              <svg width="15" height="15"><use href="#i-pdf"/></svg> PDF
-            </button>
-          </div>
-        </div>
-
-        <div class="table-card">
-          <div class="table-header">
-            <h3>قائمة المستفيدين</h3>
-            <div class="search-bar">
-              <div class="search-input-wrapper">
-                <svg class="search-icon" width="16" height="16"><use href="#i-search"/></svg>
-                <input type="text" id="beneficiaries-search" class="search-input"
-                  placeholder="بحث بالاسم، الهوية، الجوال، المخيم...">
-              </div>
-            </div>
-          </div>
-          <div class="table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>الاسم الرباعي</th><th>رقم الهوية</th><th>رقم الجوال</th>
-                  <th class="text-center">أفراد الأسرة</th><th>المخيم</th>
-                  <th class="text-center">الاستفادات</th><th>المشاريع</th><th>العمليات</th>
-                </tr>
-              </thead>
-              <tbody id="beneficiaries-tbody">
-                <tr><td colspan="8" class="empty-cell">جاري التحميل...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ════════════ البحث ════════════ -->
-      <section id="page-search" class="page">
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">البحث المتقدم</h1>
-            <p class="page-subtitle">ابحث عن مستفيد عبر جميع المشاريع</p>
-          </div>
-        </div>
-
-        <div class="table-card" style="margin-bottom:24px;">
-          <div style="padding:24px;">
-            <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-              <div style="flex:1;min-width:280px;">
-                <label class="form-label">كلمة البحث</label>
-                <div class="search-input-wrapper" style="max-width:100%;">
-                  <svg class="search-icon" width="16" height="16"><use href="#i-search"/></svg>
-                  <input type="text" id="search-input" class="search-input" style="width:100%;"
-                    placeholder="الاسم، رقم الهوية، الجوال، المخيم..."
-                    onkeydown="if(event.key==='Enter') performSearch()">
-                </div>
-              </div>
-              <button class="btn btn-primary" onclick="performSearch()">
-                <svg width="16" height="16"><use href="#i-search"/></svg> بحث
-              </button>
-            </div>
-            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:12px;">
-              يدعم البحث الجزئي — لا حاجة لإدخال الاسم كاملاً
-            </p>
-          </div>
-        </div>
-
-        <div class="table-card">
-          <div class="table-header">
-            <h3>نتائج البحث</h3>
-            <span id="search-count" style="font-size:0.85rem;color:var(--text-secondary);"></span>
-          </div>
-          <div class="table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>الاسم</th><th>رقم الهوية</th><th>رقم الجوال</th>
-                  <th>أفراد الأسرة</th><th>المخيم</th>
-                  <th class="text-center">الاستفادات</th><th>عرض</th>
-                </tr>
-              </thead>
-              <tbody id="search-results-tbody">
-                <tr><td colspan="7" class="empty-cell">أدخل كلمة للبحث</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ════════════ التقارير ════════════ -->
-      <section id="page-reports" class="page">
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">التقارير</h1>
-            <p class="page-subtitle">تصدير التقارير بصيغ Excel و PDF</p>
-          </div>
-        </div>
-
-        <div class="reports-grid">
-          <div class="report-card">
-            <div class="report-icon-wrap blue">
-              <svg width="28" height="28"><use href="#i-users"/></svg>
-            </div>
-            <div class="report-title">تقرير جميع المستفيدين</div>
-            <p class="report-description">قائمة كاملة بجميع المستفيدين الفريدين مع تفاصيلهم وعدد استفاداتهم</p>
-            <div class="report-actions">
-              <button class="btn btn-success btn-sm" onclick="exportReport('all-excel')">
-                <svg width="14" height="14"><use href="#i-excel"/></svg> Excel
-              </button>
-              <button class="btn btn-primary btn-sm" onclick="exportReport('all-pdf')">
-                <svg width="14" height="14"><use href="#i-pdf"/></svg> PDF
-              </button>
-            </div>
-          </div>
-
-          <div class="report-card">
-            <div class="report-icon-wrap red">
-              <svg width="28" height="28"><use href="#i-x-circle"/></svg>
-            </div>
-            <div class="report-title">تقرير السجلات المحذوفة</div>
-            <p class="report-description">جميع السجلات المحذوفة بسبب التكرار الداخلي أو وجودها في مشاريع سابقة</p>
-            <div class="report-actions">
-              <button class="btn btn-danger btn-sm" onclick="exportReport('deleted-excel')">
-                <svg width="14" height="14"><use href="#i-excel"/></svg> Excel
-              </button>
-            </div>
-          </div>
-
-          <div class="report-card">
-            <div class="report-icon-wrap orange">
-              <svg width="28" height="28"><use href="#i-bar-chart"/></svg>
-            </div>
-            <div class="report-title">تقرير الاستفادات المتعددة</div>
-            <p class="report-description">المستفيدون الذين استفادوا من أكثر من مشروع مرتبة تنازلياً</p>
-            <div class="report-actions">
-              <button class="btn btn-success btn-sm" onclick="exportReport('benefits-excel')">
-                <svg width="14" height="14"><use href="#i-excel"/></svg> Excel
-              </button>
-            </div>
-          </div>
-
-          <div class="report-card">
-            <div class="report-icon-wrap green">
-              <svg width="28" height="28"><use href="#i-template"/></svg>
-            </div>
-            <div class="report-title">نموذج الاستيراد</div>
-            <p class="report-description">تحميل نموذج Excel الرسمي لإدخال بيانات المستفيدين قبل رفعه إلى النظام</p>
-            <div class="report-actions">
-              <button class="btn btn-success btn-sm" onclick="downloadTemplate()">
-                <svg width="14" height="14"><use href="#i-download"/></svg> تحميل النموذج
-              </button>
-            </div>
-          </div>
-
-          <div class="report-card">
-            <div class="report-icon-wrap purple">
-              <svg width="28" height="28"><use href="#i-folder"/></svg>
-            </div>
-            <div class="report-title">تقرير مشروع محدد</div>
-            <p class="report-description">تصدير بيانات مستفيدي مشروع بعينه — اذهب إلى المشاريع واختر التصدير</p>
-            <div class="report-actions">
-              <button class="btn btn-ghost btn-sm" onclick="navigate('projects')">
-                <svg width="14" height="14"><use href="#i-folder"/></svg> فتح المشاريع
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ════════════ المستخدمون ════════════ -->
-      <section id="page-users" class="page">
-        <div class="page-loader"><div class="spinner"></div><span>جاري التحميل...</span></div>
-
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">إدارة المستخدمين</h1>
-            <p class="page-subtitle">إضافة وتعديل حسابات المستخدمين وصلاحياتهم</p>
-          </div>
-          <button class="btn btn-primary" onclick="showAddUserForm()">
-            <svg width="16" height="16"><use href="#i-plus"/></svg> إضافة مستخدم
-          </button>
-        </div>
-
-        <div class="table-card">
-          <div class="table-header"><h3>قائمة المستخدمين</h3></div>
-          <div class="table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>الاسم</th><th>البريد الإلكتروني</th><th>الدور</th>
-                  <th>الحالة</th><th>تاريخ الإضافة</th><th>العمليات</th>
-                </tr>
-              </thead>
-              <tbody id="users-tbody">
-                <tr><td colspan="6" class="empty-cell">جاري التحميل...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ════════════ سجل العمليات ════════════ -->
-      <section id="page-audit" class="page">
-        <div class="page-loader"><div class="spinner"></div><span>جاري التحميل...</span></div>
-
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">سجل العمليات</h1>
-            <p class="page-subtitle">تتبع جميع العمليات التي تمت في النظام</p>
-          </div>
-        </div>
-
-        <div class="table-card">
-          <div class="table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>التاريخ والوقت</th><th>العملية</th><th>المستخدم</th>
-                  <th>النوع</th><th>التفاصيل</th>
-                </tr>
-              </thead>
-              <tbody id="audit-tbody">
-                <tr><td colspan="5" class="empty-cell">جاري التحميل...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-    </div><!-- /content-area -->
-  </div><!-- /main-content -->
-</div><!-- /app-screen -->
-
-<!-- المودال العام -->
-<div id="modal-overlay">
-  <div class="modal-container">
-    <div class="modal-header">
-      <h3 id="modal-title">التفاصيل</h3>
-      <button class="modal-close" onclick="closeModal()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  <!-- مودال التأكيد -->
+  <div id="confirm-overlay">
+    <div class="confirm-box">
+      <div class="confirm-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-orange)">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
-      </button>
-    </div>
-    <div id="modal-body"></div>
-  </div>
-</div>
-
-<!-- مودال التأكيد -->
-<div id="confirm-overlay">
-  <div class="confirm-box">
-    <div class="confirm-icon">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-orange)">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-      </svg>
-    </div>
-    <p class="confirm-message" id="confirm-message">هل أنت متأكد؟</p>
-    <div class="confirm-actions">
-      <button id="confirm-ok" class="btn btn-danger">تأكيد</button>
-      <button id="confirm-cancel" class="btn btn-ghost">إلغاء</button>
+      </div>
+      <p class="confirm-message" id="confirm-message">هل أنت متأكد؟</p>
+      <div class="confirm-actions">
+        <button id="confirm-ok" class="btn btn-danger">تأكيد</button>
+        <button id="confirm-cancel" class="btn btn-ghost">إلغاء</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Toast Notifications -->
-<div id="toast-container"></div>
+  <!-- Toast Notifications -->
+  <div id="toast-container"></div>
 
-<script>
-  // تطبيق الثيم المحفوظ فوراً لتجنب الوميض
-  (function() {
-    const t = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', t);
-    document.getElementById('top-date').textContent =
-      new Date().toLocaleDateString('ar-SA', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  })();
-</script>
-<script type="module" src="js/app.js"></script>
+  <script>
+    // تطبيق الثيم المحفوظ فوراً لتجنب الوميض
+    (function () {
+      const t = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      document.getElementById('top-date').textContent =
+        new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    })();
+  </script>
+  <script type="module" src="app.js"></script>
 </body>
+
 </html>

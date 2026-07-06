@@ -2,11 +2,11 @@
 // app.js - منطق التطبيق الرئيسي + Router + UI
 // ======================================================
 
-import { initAuth, login, logout, hasPermission, currentUser, currentUserData, ROLE_LABELS, createUser } from './auth.js';
-import { BeneficiaryDB, ProjectDB, BenefitDB, DeletedRecordDB, AuditDB, UserDB, StatsDB } from './db.js';
-import { importProject, exportProjectErrors } from './import.js';
-import { ExcelExport, PDFExport } from './reports.js';
-import { renderProjectsChart, renderDuplicatesChart, renderTrendChart, destroyAllCharts } from './charts.js';
+import { initAuth, login, logout, hasPermission, currentUser, currentUserData, ROLE_LABELS, createUser } from 'auth.js';
+import { BeneficiaryDB, ProjectDB, BenefitDB, DeletedRecordDB, AuditDB, UserDB, StatsDB } from 'db.js';
+import { importProject, exportProjectErrors } from 'import.js';
+import { ExcelExport, PDFExport } from 'reports.js';
+import { renderProjectsChart, renderDuplicatesChart, renderTrendChart, destroyAllCharts } from 'charts.js';
 
 // ======================================================
 // الحالة العامة
@@ -262,11 +262,11 @@ function renderProjectsTable(projects) {
 }
 
 // تنزيل ملف الأخطاء من جدول المشاريع مباشرة
-window.downloadProjectErrorsById = async function(projectId, projectName) {
+window.downloadProjectErrorsById = async function (projectId, projectName) {
   try {
     showToast('جاري استرجاع السجلات المستبعدة...', 'info');
     const records = await DeletedRecordDB.getByProject(projectId);
-    
+
     const internalDups = records.filter(r => r.deletionType === 'internal');
     const crossDups = records.filter(r => r.deletionType === 'cross');
 
@@ -282,7 +282,7 @@ window.downloadProjectErrorsById = async function(projectId, projectName) {
 };
 
 // تنزيل المستفيدين السابقين الذين حصلوا على استفادة إضافية بالمشروع
-window.downloadProjectPreviousBenefitsById = async function(projectId, projectName) {
+window.downloadProjectPreviousBenefitsById = async function (projectId, projectName) {
   try {
     showToast('جاري استرجاع مستفيدي الاستفادات الإضافية...', 'info');
     const benefits = await BenefitDB.getByProject(projectId);
@@ -388,7 +388,7 @@ function renderPreviousProjectsForImport(projects) {
 }
 
 // تحديث نص عداد المشاريع المحددة للمقارنة
-window.updateCompareSelection = function() {
+window.updateCompareSelection = function () {
   const selected = document.querySelectorAll('.prev-project-cb:checked');
   const countEl = document.getElementById('compare-selected-count');
   if (countEl) {
@@ -532,7 +532,7 @@ function renderImportResult(result, selectedProjectIds = []) {
         <div class="result-stat-label">مكرر مع المشاريع المحددة</div>
       </div>` : ''}
       <div class="result-stat blue" style="background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.25);">
-        <div class="result-stat-value" style="color:var(--accent-blue);">${(stats.benefitAdditions||0).toLocaleString('ar-SA')}</div>
+        <div class="result-stat-value" style="color:var(--accent-blue);">${(stats.benefitAdditions || 0).toLocaleString('ar-SA')}</div>
         <div class="result-stat-label">مستفيد موجود + استفادة جديدة</div>
       </div>
       <div class="result-stat green">
