@@ -2,11 +2,11 @@
 // app.js - منطق التطبيق الرئيسي + Router + UI
 // ======================================================
 
-import { initAuth, login, logout, hasPermission, currentUser, currentUserData, ROLE_LABELS, createUser } from 'auth.js';
-import { BeneficiaryDB, ProjectDB, BenefitDB, DeletedRecordDB, AuditDB, UserDB, StatsDB } from 'db.js';
-import { importProject, exportProjectErrors } from 'import.js';
-import { ExcelExport, PDFExport } from 'reports.js';
-import { renderProjectsChart, renderDuplicatesChart, renderTrendChart, destroyAllCharts } from 'charts.js';
+import { initAuth, login, logout, hasPermission, currentUser, currentUserData, ROLE_LABELS, createUser } from './auth.js';
+import { BeneficiaryDB, ProjectDB, BenefitDB, DeletedRecordDB, AuditDB, UserDB, StatsDB } from './db.js';
+import { importProject, exportProjectErrors } from './import.js';
+import { ExcelExport, PDFExport } from './reports.js';
+import { renderProjectsChart, renderDuplicatesChart, renderTrendChart, destroyAllCharts } from './charts.js';
 
 // ======================================================
 // الحالة العامة
