@@ -3,7 +3,7 @@
 // ======================================================
 
 import { initAuth, login, logout, hasPermission, currentUser, currentUserData, ROLE_LABELS, createUser } from './auth.js';
-import { BeneficiaryDB, ProjectDB, BenefitDB, DeletedRecordDB, AuditDB, UserDB, StatsDB } from './db.js';
+import { BeneficiaryDB, ProjectDB, BenefitDB, DeletedRecordDB, AuditDB, UserDB, StatsDB, MainProjectDB } from './db.js';
 import { importProject, exportProjectErrors } from './import.js';
 import { ExcelExport, PDFExport } from './reports.js';
 import { renderProjectsChart, renderDuplicatesChart, renderTrendChart, destroyAllCharts } from './charts.js';
@@ -40,6 +40,7 @@ function navigate(page, params = {}) {
   switch (page) {
     case 'dashboard': loadDashboard(); break;
     case 'projects': loadProjectsPage(); break;
+    case 'main-projects': loadMainProjectsPage(); break;
     case 'beneficiaries': loadBeneficiariesPage(); break;
     case 'search': loadSearchPage(); break;
     case 'reports': loadReportsPage(); break;
@@ -146,6 +147,7 @@ function applyPermissions() {
   document.getElementById('nav-users')?.classList.toggle('hidden', !canManageUsers);
   document.getElementById('nav-audit')?.classList.toggle('hidden', !canViewAudit);
   document.getElementById('nav-import')?.classList.toggle('hidden', !canImport);
+  document.getElementById('nav-main-projects')?.classList.toggle('hidden', !canImport);
 }
 
 // ======================================================
@@ -353,6 +355,9 @@ async function loadImportPage(params = {}) {
   } catch (err) {
     console.warn('لم يتم تحميل المشاريع السابقة:', err.message);
   }
+
+  // تحميل المشاريع الرئيسية لقائمة الاختيار في الاستيراد
+  loadMainProjectsForImport();
 }
 
 // عرض المشاريع السابقة في صفحة الاستيراد
@@ -454,6 +459,13 @@ window.startImport = async function () {
   const selectedCbs = document.querySelectorAll('.prev-project-cb:checked');
   const selectedProjectIds = Array.from(selectedCbs).map(cb => cb.value);
 
+  // قراءة المشروع الرئيسي المختار (إن وجد)
+  const mainProjectSelect = document.getElementById('main-project-select');
+  const selectedMainProjectId = mainProjectSelect?.value || '';
+  const selectedMainProjectName = selectedMainProjectId
+    ? (mainProjectSelect?.options[mainProjectSelect.selectedIndex]?.text || '')
+    : '';
+
   const progressSection = document.getElementById('import-progress');
   const resultSection = document.getElementById('import-result');
   const submitBtn = document.getElementById('import-submit-btn');
@@ -463,19 +475,35 @@ window.startImport = async function () {
   if (submitBtn) submitBtn.disabled = true;
 
   try {
-    // إنشاء المشروع أولاً
+    // إنشاء المشروع (الملف الفرعي)
     const projectId = await ProjectDB.add({
       name: projectName,
+      mainProjectId: selectedMainProjectId || null,
+      mainProjectName: selectedMainProjectName || null,
       createdBy: currentUser?.uid || 'unknown',
       createdByName: currentUserData?.name || 'غير معروف'
     });
 
-    // بدء الاستيراد مع تمرير المشاريع المحددة
+    // بدء الاستيراد مع تمرير المشاريع المحددة والمشروع الرئيسي
     const result = await importProject(
       projectId, projectName, file,
       (progress) => updateImportProgress(progress),
-      selectedProjectIds
+      selectedProjectIds,
+      selectedMainProjectId || null,
+      selectedMainProjectName || null
     );
+
+    // تحديث إحصائيات المشروع الرئيسي (إن تم تحديد مشروع رئيسي)
+    if (selectedMainProjectId) {
+      try {
+        await MainProjectDB.incrementStats(selectedMainProjectId, {
+          subFilesCount: 1,
+          totalBeneficiaries: result.stats?.finalCount || 0
+        });
+      } catch (statsErr) {
+        console.warn('لم يتم تحديث إحصائيات المشروع الرئيسي:', statsErr.message);
+      }
+    }
 
     importResultData = {
       ...result,
@@ -991,6 +1019,7 @@ window.exportReport = async function (type) {
       case 'all-pdf': await PDFExport.exportAllBeneficiaries(); break;
       case 'deleted-excel': await ExcelExport.exportDeleted(); break;
       case 'benefits-excel': await ExcelExport.exportBenefitsSummary(); break;
+      case 'benefit-additions-excel': await ExcelExport.exportBenefitAdditions(); break;
     }
     showToast('تم تصدير التقرير بنجاح', 'success');
   } catch (err) {
@@ -1277,3 +1306,535 @@ window.togglePrevProjects = function () {
 window.viewBeneficiary = viewBeneficiary;
 
 
+// ======================================================
+// المشاريع الرئيسية - إضافة وإدارة
+// ======================================================
+let allMainProjects = [];
+
+async function loadMainProjectsPage() {
+  showPageLoader('page-main-projects');
+  try {
+    const mps = await MainProjectDB.getAll();
+    allMainProjects = mps;
+    renderMainProjectsTable(mps);
+  } catch (err) {
+    showToast('فشل تحميل المشاريع الرئيسية: ' + err.message, 'error');
+  } finally {
+    hidePageLoader('page-main-projects');
+  }
+}
+
+function renderMainProjectsTable(mps) {
+  const tbody = document.getElementById('main-projects-tbody');
+  if (!tbody) return;
+  if (mps.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">لا توجد مشاريع رئيسية. ابدأ بإنشاء مشروع رئيسي جديد.</td></tr>`;
+    return;
+  }
+  const svgTrash = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+  const svgEdit = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+  const svgExcel = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 3v18"/><path d="M2 9h20"/><path d="M2 15h20"/><path d="M14 12l-3 4"/><path d="M11 12l3 4"/></svg>`;
+  const svgEye = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+
+  tbody.innerHTML = mps.map(p => `
+    <tr class="table-row-animate">
+      <td><strong><a href="#" onclick="event.preventDefault(); viewMainProject('${p.id}')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--accent-blue);">${escapeHtml(p.name)}</a></strong></td>
+      <td>${escapeHtml(p.description || '-')}</td>
+      <td>${formatTimestamp(p.createdAt)}</td>
+      <td class="text-center"><span class="badge badge-blue">${p.subFilesCount || 0}</span></td>
+      <td class="text-center"><span class="badge badge-green">${(p.totalBeneficiaries || 0).toLocaleString('ar-SA')}</span></td>
+      <td>
+        <div class="action-btns">
+          <button class="btn-icon btn-view" onclick="viewMainProject('${p.id}')" title="عرض تفاصيل المشروع الرئيسي">${svgEye}</button>
+          ${hasPermission('canEdit') ? `<button class="btn-icon btn-edit" onclick="editMainProject('${p.id}')" title="تعديل">${svgEdit}</button>` : ''}
+          ${hasPermission('canExport') ? `<button class="btn-icon btn-export" onclick="exportMainProjectExcel('${p.id}', '${escapeHtml(p.name)}')" title="تنزيل المشروع الرئيسي كاملاً مدمجاً">${svgExcel}</button>` : ''}
+          ${hasPermission('canDelete') ? `<button class="btn-icon btn-delete" onclick="deleteMainProject('${p.id}')" title="حذف">${svgTrash}</button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.showAddMainProjectModal = function () {
+  const titleEl = document.getElementById('modal-title');
+  if (titleEl) titleEl.textContent = 'إضافة مشروع رئيسي جديد';
+  showModal('modal-add-main-project', `
+    <form onsubmit="submitAddMainProject(event)">
+      <div class="form-group">
+        <label for="main-project-name">اسم المشروع الرئيسي <span style="color:var(--accent-red)">*</span></label>
+        <input type="text" id="main-project-name" class="form-input" placeholder="مثال: مشروع السلة الغذائية" required>
+      </div>
+      <div class="form-group">
+        <label for="main-project-desc">وصف المشروع (اختياري)</label>
+        <input type="text" id="main-project-desc" class="form-input" placeholder="وصف مختصر للمشروع">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+        <button type="submit" class="btn btn-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          حفظ المشروع
+        </button>
+      </div>
+    </form>
+  `);
+};
+
+window.submitAddMainProject = async function (e) {
+  e.preventDefault();
+  const name = document.getElementById('main-project-name')?.value?.trim();
+  const description = document.getElementById('main-project-desc')?.value?.trim();
+  if (!name) { showToast('يرجى إدخال اسم المشروع', 'error'); return; }
+  try {
+    await MainProjectDB.add({
+      name, description,
+      createdBy: currentUser?.uid || 'unknown',
+      createdByName: currentUserData?.name || 'غير معروف'
+    });
+    showToast(`تم إنشاء المشروع الرئيسي "${name}" بنجاح`, 'success');
+    closeModal();
+    loadMainProjectsPage();
+  } catch (err) {
+    showToast('فشل إنشاء المشروع: ' + err.message, 'error');
+  }
+};
+
+window.editMainProject = async function (id) {
+  const p = await MainProjectDB.getById(id);
+  if (!p) { showToast('المشروع غير موجود', 'error'); return; }
+  const titleEl = document.getElementById('modal-title');
+  if (titleEl) titleEl.textContent = 'تعديل المشروع الرئيسي';
+  showModal('modal-edit-main-project', `
+    <form onsubmit="saveEditMainProject(event, '${id}')">
+      <div class="form-group">
+        <label>اسم المشروع</label>
+        <input type="text" id="edit-main-project-name" class="form-input" value="${escapeHtml(p.name)}" required>
+      </div>
+      <div class="form-group">
+        <label>الوصف</label>
+        <input type="text" id="edit-main-project-desc" class="form-input" value="${escapeHtml(p.description || '')}">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+        <button type="submit" class="btn btn-primary">حفظ التعديلات</button>
+      </div>
+    </form>
+  `);
+};
+
+window.saveEditMainProject = async function (e, id) {
+  e.preventDefault();
+  const name = document.getElementById('edit-main-project-name')?.value?.trim();
+  const description = document.getElementById('edit-main-project-desc')?.value?.trim();
+  try {
+    await MainProjectDB.update(id, { name, description });
+    showToast('تم تحديث المشروع', 'success');
+    closeModal();
+    loadMainProjectsPage();
+  } catch (err) {
+    showToast('فشل التحديث: ' + err.message, 'error');
+  }
+};
+
+window.deleteMainProject = async function (id) {
+  const p = await MainProjectDB.getById(id);
+  if (!p) return;
+  const confirmed = await showConfirm(`هل تريد حذف المشروع الرئيسي "${p.name}"؟\nلن يتم حذف الملفات الفرعية المرتبطة به، فقط سيتم إزالة المشروع الرئيسي.`);
+  if (!confirmed) return;
+  try {
+    await MainProjectDB.delete(id);
+    showToast('تم حذف المشروع الرئيسي', 'success');
+    loadMainProjectsPage();
+  } catch (err) {
+    showToast('فشل الحذف: ' + err.message, 'error');
+  }
+};
+
+window.exportMainProjectExcel = async function (id, name) {
+  try {
+    showToast('جاري تحضير ملف التصدير للمشروع الرئيسي...', 'info');
+    await ExcelExport.exportMainProject(id, name);
+    showToast('تم تصدير المشروع الرئيسي بنجاح', 'success');
+  } catch (err) {
+    showToast('فشل التصدير: ' + err.message, 'error');
+  }
+};
+
+window.viewMainProject = async function (id) {
+  try {
+    const p = await MainProjectDB.getById(id);
+    if (!p) { showToast('المشروع غير موجود', 'error'); return; }
+
+    const titleEl = document.getElementById('modal-title');
+    if (titleEl) titleEl.textContent = `تفاصيل المشروع الرئيسي: ${p.name}`;
+
+    showModal('modal-view-main-project', `
+      <div style="text-align:center;padding:30px;color:var(--text-muted);">
+        <div class="spinner" style="margin:0 auto 12px;"></div>
+        <p>جاري استرجاع تفاصيل المشروع والملفات...</p>
+      </div>
+    `);
+
+    // 1. جلب كافة المشاريع الفرعية المرتبطة بالمشروع الرئيسي
+    const allProj = await ProjectDB.getAll();
+    const subProjects = allProj.filter(proj => proj.mainProjectId === id);
+    const subProjectIds = subProjects.map(proj => proj.id);
+
+    let allBenefits = [];
+    if (subProjectIds.length > 0) {
+      // 2. جلب جميع الاستفادات للمشاريع الفرعية
+      const promises = subProjectIds.map(pid => BenefitDB.getByProject(pid));
+      const results = await Promise.all(promises);
+      allBenefits = results.flat();
+      
+      // فرز تنازلي
+      allBenefits.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        return dateB - dateA;
+      });
+    }
+
+    // حفظ في الكاش المؤقت للبحث
+    window._currentMainProjectBenefitsCache = allBenefits;
+
+    const renderTableHtml = (benefitsList) => {
+      if (benefitsList.length === 0) {
+        return `<tr><td colspan="7" class="empty-cell">لا توجد بيانات مستفيدين مطابقة للبحث</td></tr>`;
+      }
+      return benefitsList.map((b, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${escapeHtml(b.record?.fullName || b.fullName || '')}</strong></td>
+          <td>${escapeHtml(b.record?.idNumber || b.idNumber || '-')}</td>
+          <td>${escapeHtml(b.record?.phone || b.phone || '-')}</td>
+          <td>${escapeHtml(b.record?.campName || b.campName || '-')}</td>
+          <td><span class="badge badge-blue" style="font-size:0.75rem;">${escapeHtml(b.projectName || '')}</span></td>
+          <td>${formatTimestamp(b.createdAt)}</td>
+        </tr>
+      `).join('');
+    };
+
+    const modalHtml = `
+      <div class="project-detail">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 style="font-size:1.25rem;color:var(--text-primary);margin-bottom:4px;">📁 ${escapeHtml(p.name)}</h2>
+            <p style="color:var(--text-muted);font-size:0.8rem;">${escapeHtml(p.description || 'لا يوجد وصف للمشروع الرئيسي')}</p>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <div style="text-align:center;background:var(--bg-secondary);padding:6px 14px;border-radius:var(--radius-md);border:1px solid var(--border-color);">
+              <div style="font-size:1.1rem;font-weight:bold;color:var(--accent-blue);">${p.subFilesCount || 0}</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);">الملفات الفرعية</div>
+            </div>
+            <div style="text-align:center;background:var(--bg-secondary);padding:6px 14px;border-radius:var(--radius-md);border:1px solid var(--border-color);">
+              <div style="font-size:1.1rem;font-weight:bold;color:var(--accent-green);">${(p.totalBeneficiaries || 0).toLocaleString('ar-SA')}</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);">إجمالي المستفيدين</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin:16px 0;">
+          <input type="text" id="main-project-search" class="form-input" placeholder="ابحث باسم المستفيد أو رقم الهوية أو رقم الجوال..." oninput="filterMainProjectBeneficiaries()" style="width:100%;max-width:450px;">
+        </div>
+
+        <div class="detail-section">
+          <h3>قائمة المستفيدين المقبولين بالمشروع الرئيسي</h3>
+          <div class="table-wrapper" style="max-height:40vh;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-md);">
+            <table class="data-table" style="font-size:0.82rem;">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>الاسم الرباعي</th>
+                  <th>رقم الهوية</th>
+                  <th>رقم الجوال</th>
+                  <th>المخيم</th>
+                  <th>الملف الفرعي</th>
+                  <th>تاريخ الاستفادة</th>
+                </tr>
+              </thead>
+              <tbody id="main-project-benefits-tbody">
+                ${renderTableHtml(allBenefits)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    showModal('modal-view-main-project', modalHtml);
+
+    // تعريف دالة البحث داخلياً لتصفية الجدول ديناميكياً
+    window.filterMainProjectBeneficiaries = function() {
+      const queryVal = document.getElementById('main-project-search')?.value?.toLowerCase()?.trim() || '';
+      const tbody = document.getElementById('main-project-benefits-tbody');
+      if (!tbody) return;
+
+      const cache = window._currentMainProjectBenefitsCache || [];
+      if (!queryVal) {
+        tbody.innerHTML = renderTableHtml(cache);
+        return;
+      }
+
+      const filtered = cache.filter(b => {
+        const name = (b.record?.fullName || b.fullName || '').toLowerCase();
+        const idNum = (b.record?.idNumber || b.idNumber || '').toLowerCase();
+        const phoneNum = (b.record?.phone || b.phone || '').toLowerCase();
+        const camp = (b.record?.campName || b.campName || '').toLowerCase();
+        const subFile = (b.projectName || '').toLowerCase();
+        return name.includes(queryVal) || idNum.includes(queryVal) || phoneNum.includes(queryVal) || camp.includes(queryVal) || subFile.includes(queryVal);
+      });
+
+      tbody.innerHTML = renderTableHtml(filtered);
+    };
+
+  } catch (err) {
+    showToast('فشل تحميل تفاصيل المشروع: ' + err.message, 'error');
+  }
+};
+
+// عرض المشاريع الرئيسية في قائمة الاستيراد
+async function loadMainProjectsForImport() {
+  const select = document.getElementById('main-project-select');
+  if (!select) return;
+  try {
+    const mps = await MainProjectDB.getAll();
+    allMainProjects = mps;
+    select.innerHTML = `<option value="">-- اختر مشروع رئيسي (اختياري) --</option>` +
+      mps.map(p => `<option value="${p.id}" data-name="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('');
+  } catch (err) {
+    console.warn('لم يتم تحميل المشاريع الرئيسية:', err.message);
+  }
+}
+
+// ======================================================
+// نافذة السجلات المحذوفة الكلية (من لوحة التحكم)
+// ======================================================
+window.viewAllDeletedRecords = async function () {
+  const titleEl = document.getElementById('modal-title');
+  if (titleEl) titleEl.textContent = 'جميع السجلات المحذوفة (التكرارات)';
+
+  showModal('modal-all-deleted', `
+    <div style="text-align:center;padding:30px;color:var(--text-muted);">
+      <div class="spinner" style="margin:0 auto 12px;"></div>
+      <p>جاري استرجاع السجلات...</p>
+    </div>
+  `);
+
+  try {
+    const records = await DeletedRecordDB.getAll();
+    if (records.length === 0) {
+      showModal('modal-all-deleted', `<p style="text-align:center;color:var(--text-muted);padding:30px;">لا توجد سجلات محذوفة</p>`);
+      return;
+    }
+
+    const html = `
+      <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <span style="color:var(--text-secondary);font-size:0.88rem;">إجمالي السجلات: <strong>${records.length}</strong></span>
+        <button class="btn btn-success btn-sm" onclick="exportAllDeletedExcel()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 3v18"/><path d="M2 9h20"/></svg>
+          تحميل الكل Excel
+        </button>
+      </div>
+      <div class="table-wrapper" style="max-height:55vh;overflow-y:auto;">
+        <table class="data-table" style="font-size:0.82rem;">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الاسم الرباعي</th>
+              <th>رقم الهوية</th>
+              <th>رقم الجوال</th>
+              <th>المشروع</th>
+              <th>نوع التكرار</th>
+              <th>السبب</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${records.map((r, i) => `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${escapeHtml(r.fullName || '-')}</td>
+                <td>${escapeHtml(r.idNumber || '-')}</td>
+                <td>${escapeHtml(r.phone || '-')}</td>
+                <td><span class="badge badge-gray" style="font-size:0.72rem;">${escapeHtml(r.projectName || '-')}</span></td>
+                <td>
+                  <span class="badge ${r.deletionType === 'internal' ? 'badge-orange' : 'badge-red'}" style="font-size:0.72rem;">
+                    ${r.deletionType === 'internal' ? 'تكرار داخلي' : 'مستفيد سابق'}
+                  </span>
+                </td>
+                <td style="font-size:0.78rem;color:var(--text-muted);">${escapeHtml(r.reason || r.matchReason || '-')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    showModal('modal-all-deleted', html);
+    // حفظ البيانات مؤقتاً للتصدير
+    window._allDeletedRecordsCache = records;
+  } catch (err) {
+    showToast('فشل استرجاع السجلات: ' + err.message, 'error');
+  }
+};
+
+window.exportAllDeletedExcel = function () {
+  const records = window._allDeletedRecordsCache || [];
+  if (records.length === 0) { showToast('لا توجد بيانات للتصدير', 'warning'); return; }
+
+  const rows = records.map((r, i) => ({
+    '#': i + 1,
+    'الاسم الرباعي': r.fullName || '',
+    'رقم الهوية': r.idNumber || '',
+    'رقم الجوال': r.phone || '',
+    'عدد أفراد الأسرة': r.familySize || '',
+    'اسم المخيم': r.campName || '',
+    'المشروع': r.projectName || '',
+    'نوع التكرار': r.deletionType === 'internal' ? 'تكرار داخلي' : 'مستفيد سابق',
+    'سبب الحذف': r.reason || r.matchReason || '',
+    'تاريخ الحذف': r.deletedAt?.toDate ? r.deletedAt.toDate().toLocaleDateString('ar-SA') : '-'
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'السجلات المحذوفة');
+  ws['!cols'] = [
+    { wch: 5 }, { wch: 30 }, { wch: 18 }, { wch: 18 },
+    { wch: 15 }, { wch: 20 }, { wch: 22 }, { wch: 16 }, { wch: 35 }, { wch: 20 }
+  ];
+  const dateStr = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `جميع_السجلات_المحذوفة_${dateStr}.xlsx`);
+  showToast('تم تصدير السجلات المحذوفة بنجاح', 'success');
+};
+
+// ======================================================
+// إضافة مستفيد جديد يدوياً
+// ======================================================
+window.showAddBeneficiaryModal = async function () {
+  const projects = allProjects.length > 0 ? allProjects : await ProjectDB.getAll();
+  const titleEl = document.getElementById('modal-title');
+  if (titleEl) titleEl.textContent = 'إضافة مستفيد جديد يدوياً';
+
+  showModal('modal-add-beneficiary', `
+    <form onsubmit="submitAddBeneficiary(event)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>الاسم الرباعي <span style="color:var(--accent-red)">*</span></label>
+          <input type="text" id="new-ben-name" class="form-input" placeholder="الاسم الكامل الرباعي" required>
+        </div>
+        <div class="form-group">
+          <label>رقم الهوية</label>
+          <input type="text" id="new-ben-id" class="form-input" placeholder="رقم الهوية الوطنية">
+        </div>
+        <div class="form-group">
+          <label>رقم الجوال</label>
+          <input type="text" id="new-ben-phone" class="form-input" placeholder="05xxxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>عدد أفراد الأسرة</label>
+          <input type="number" id="new-ben-family" class="form-input" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>اسم المخيم</label>
+          <input type="text" id="new-ben-camp" class="form-input" placeholder="اسم المخيم أو المنطقة">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:8px;">
+        <label>المشروع الذي سيُضاف إليه <span style="color:var(--accent-red)">*</span></label>
+        <select id="new-ben-project" class="form-input" required>
+          <option value="">-- اختر المشروع --</option>
+          ${projects.map(p => `<option value="${p.id}" data-name="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('')}
+        </select>
+        <p style="font-size:0.77rem;color:var(--text-muted);margin-top:4px;">سيتم فحص التكرار مع المشروع المختار قبل الإضافة.</p>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+        <button type="submit" class="btn btn-primary" id="add-ben-submit-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          إضافة المستفيد
+        </button>
+      </div>
+    </form>
+  `);
+};
+
+window.submitAddBeneficiary = async function (e) {
+  e.preventDefault();
+  const btn = document.getElementById('add-ben-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الفحص...'; }
+
+  const fullName = document.getElementById('new-ben-name')?.value?.trim();
+  const idNumber = document.getElementById('new-ben-id')?.value?.trim();
+  const phone = document.getElementById('new-ben-phone')?.value?.trim();
+  const familySize = parseInt(document.getElementById('new-ben-family')?.value) || 0;
+  const campName = document.getElementById('new-ben-camp')?.value?.trim();
+  const projectSelect = document.getElementById('new-ben-project');
+  const projectId = projectSelect?.value;
+  const projectName = projectSelect?.options[projectSelect.selectedIndex]?.dataset?.name || '';
+
+  if (!fullName) { showToast('يرجى إدخال الاسم الرباعي', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة المستفيد'; } return; }
+  if (!projectId) { showToast('يرجى اختيار المشروع', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة المستفيد'; } return; }
+
+  try {
+    // ─── فحص التكرار ───
+    let existingBen = null;
+    let matchReason = '';
+
+    if (idNumber) {
+      existingBen = await BeneficiaryDB.findByIdNumber(idNumber);
+      if (existingBen) matchReason = 'تطابق رقم الهوية';
+    }
+    if (!existingBen && fullName && phone) {
+      existingBen = await BeneficiaryDB.findByNameAndPhone(fullName, phone);
+      if (existingBen) matchReason = 'تطابق الاسم ورقم الجوال';
+    }
+
+    if (existingBen) {
+      // التحقق هل هو في نفس المشروع المختار
+      const inSameProject = (existingBen.projectIds || []).includes(projectId);
+      if (inSameProject) {
+        showToast(`⚠️ هذا المستفيد موجود مسبقاً في المشروع المختار (${matchReason})`, 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة المستفيد'; }
+        return;
+      }
+      // موجود لكن في مشاريع أخرى → أضف استفادة له
+      await BeneficiaryDB.addBenefit(existingBen.id, projectId, projectName);
+      await BenefitDB.add({
+        beneficiaryId: existingBen.id,
+        projectId, projectName,
+        matchReason,
+        isBenefitAddition: true,
+        addedManually: true,
+        importedBy: currentUser?.uid || 'unknown',
+        importedByName: currentUserData?.name || 'غير معروف'
+      });
+      await AuditDB.log('MANUAL_ADD_BENEFIT', 'beneficiary', existingBen.id, currentUser?.uid, currentUser?.email, { fullName, projectName, matchReason });
+      showToast(`تمت إضافة استفادة جديدة للمستفيد الموجود "${fullName}" في مشروع ${projectName}`, 'success');
+    } else {
+      // مستفيد جديد تماماً
+      const newId = await BeneficiaryDB.add({
+        fullName, idNumber, phone, familySize, campName,
+        projectIds: [projectId],
+        projectNames: [projectName],
+        firstBenefitDate: new Date(),
+        lastBenefitDate: new Date(),
+        addedManually: true,
+        importedBy: currentUser?.uid || 'unknown',
+        importedByName: currentUserData?.name || 'غير معروف'
+      });
+      await BenefitDB.add({
+        beneficiaryId: newId,
+        projectId, projectName,
+        addedManually: true,
+        importedBy: currentUser?.uid || 'unknown',
+        importedByName: currentUserData?.name || 'غير معروف'
+      });
+      await AuditDB.log('MANUAL_ADD_BENEFICIARY', 'beneficiary', newId, currentUser?.uid, currentUser?.email, { fullName, projectName });
+      showToast(`تمت إضافة المستفيد "${fullName}" بنجاح إلى مشروع ${projectName}`, 'success');
+    }
+
+    closeModal();
+    loadBeneficiariesPage();
+  } catch (err) {
+    showToast('فشل الإضافة: ' + err.message, 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة المستفيد'; }
+  }
+};

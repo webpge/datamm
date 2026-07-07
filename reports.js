@@ -90,6 +90,70 @@ export const ExcelExport = {
         'المشاريع': (b.projectNames || []).join(' | ')
       }));
     downloadExcel(rows, 'تقرير_الاستفادات');
+  },
+
+  async exportBenefitAdditions() {
+    const data = await BenefitDB.getBenefitAdditions();
+    
+    data.sort((a, b) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+      return dateB - dateA;
+    });
+
+    const rows = data.map((b, i) => ({
+      '#': i + 1,
+      'الاسم الرباعي': b.record?.fullName || b.fullName || '',
+      'رقم الهوية': b.record?.idNumber || b.idNumber || '',
+      'رقم الجوال': b.record?.phone || b.phone || '',
+      'المشروع المضاف فيه': b.projectName || '',
+      'المشروع الرئيسي': b.mainProjectName || 'لا يوجد',
+      'سبب المطابقة': b.matchReason || '',
+      'المشاريع المتطابق فيها (السابقة)': (b.previousProjects || []).join(' | ') || 'غير متوفر',
+      'تاريخ الإضافة': formatDate(b.createdAt)
+    }));
+    downloadExcel(rows, 'المستفيدون_السابقون_الاستفادات_الإضافية');
+  },
+
+  async exportMainProject(mainProjectId, mainProjectName) {
+    // 1. جلب كافة المشاريع الفرعية المرتبطة بالمشروع الرئيسي
+    const allProjects = await ProjectDB.getAll();
+    const subProjects = allProjects.filter(p => p.mainProjectId === mainProjectId);
+    const subProjectIds = subProjects.map(p => p.id);
+
+    if (subProjectIds.length === 0) {
+      throw new Error('لا توجد ملفات فرعية مستوردة تحت هذا المشروع الرئيسي بعد');
+    }
+
+    // 2. جلب جميع الاستفادات للمشاريع الفرعية
+    const promises = subProjectIds.map(pid => BenefitDB.getByProject(pid));
+    const results = await Promise.all(promises);
+    const allBenefits = results.flat();
+
+    if (allBenefits.length === 0) {
+      throw new Error('لا توجد استفادات مسجلة في هذا المشروع الرئيسي بعد');
+    }
+
+    // فرز البيانات تنازلياً حسب تاريخ الاستفادة
+    allBenefits.sort((a, b) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+      return dateB - dateA;
+    });
+
+    // 3. بناء الصفوف للتصدير
+    const rows = allBenefits.map((b, i) => ({
+      '#': i + 1,
+      'الاسم الرباعي': b.record?.fullName || b.fullName || '',
+      'رقم الهوية': b.record?.idNumber || b.idNumber || '',
+      'رقم الجوال': b.record?.phone || b.phone || '',
+      'عدد أفراد الأسرة': b.record?.familySize || b.familySize || '',
+      'اسم المخيم': b.record?.campName || b.campName || '',
+      'الملف الفرعي / المشروع الفرعي': b.projectName || '',
+      'تاريخ الاستفادة': formatDate(b.createdAt)
+    }));
+
+    downloadExcel(rows, `مشروع_رئيسي_${mainProjectName}`);
   }
 };
 

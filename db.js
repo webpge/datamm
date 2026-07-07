@@ -16,6 +16,7 @@ import {
 export const COLLECTIONS = {
   USERS: 'users',
   PROJECTS: 'projects',
+  MAIN_PROJECTS: 'mainProjects',
   BENEFICIARIES: 'beneficiaries',
   BENEFITS: 'benefits',
   DELETED_RECORDS: 'deletedRecords',
@@ -357,6 +358,15 @@ export const BenefitDB = {
     const batch = writeBatch(db);
     snap.docs.forEach(d => batch.delete(d.ref));
     await batch.commit();
+  },
+
+  async getBenefitAdditions() {
+    const q = query(
+      collection(db, COLLECTIONS.BENEFITS),
+      where('isBenefitAddition', '==', true)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 };
 
@@ -473,7 +483,7 @@ export const StatsDB = {
   async getDashboardStats() {
     const [beneficiariesCount, projectsCount, benefitsCount, deletedCount] = await Promise.all([
       BeneficiaryDB.getCount(),
-      ProjectDB.getCount(),
+      MainProjectDB.getCount(),
       BenefitDB.getCount(),
       DeletedRecordDB.getCount()
     ]);
@@ -484,5 +494,62 @@ export const StatsDB = {
       benefitsCount,
       deletedCount
     };
+  }
+};
+
+// ======================================================
+// المشاريع الرئيسية - Main Projects (Parent)
+// ======================================================
+export const MainProjectDB = {
+  async add(data) {
+    const docRef = await addDoc(collection(db, COLLECTIONS.MAIN_PROJECTS), {
+      name: data.name,
+      description: data.description || '',
+      createdBy: data.createdBy || 'unknown',
+      createdByName: data.createdByName || 'غير معروف',
+      subFilesCount: 0,
+      totalBeneficiaries: 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  },
+
+  async update(id, data) {
+    await updateDoc(doc(db, COLLECTIONS.MAIN_PROJECTS, id), {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+  },
+
+  async delete(id) {
+    // حذف المشروع الرئيسي فقط (الملفات الفرعية تُدار بشكل مستقل)
+    await deleteDoc(doc(db, COLLECTIONS.MAIN_PROJECTS, id));
+  },
+
+  async getById(id) {
+    const snap = await getDoc(doc(db, COLLECTIONS.MAIN_PROJECTS, id));
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  },
+
+  async getAll() {
+    const snap = await getDocs(
+      query(collection(db, COLLECTIONS.MAIN_PROJECTS), orderBy('createdAt', 'desc'))
+    );
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+
+  async getCount() {
+    const snap = await getCountFromServer(collection(db, COLLECTIONS.MAIN_PROJECTS));
+    return snap.data().count;
+  },
+
+  // تحديث إحصائيات المشروع الرئيسي بعد رفع ملف فرعي
+  async incrementStats(id, delta) {
+    await updateDoc(doc(db, COLLECTIONS.MAIN_PROJECTS, id), {
+      subFilesCount: increment(delta.subFilesCount || 0),
+      totalBeneficiaries: increment(delta.totalBeneficiaries || 0),
+      updatedAt: serverTimestamp()
+    });
   }
 };

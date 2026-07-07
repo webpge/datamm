@@ -92,7 +92,9 @@ export async function processStep4_Save(
   projectId, projectName,
   newRecords, internalDuplicates, crossDuplicates, benefitAdditions,
   totalStats,
-  onProgress
+  onProgress,
+  mainProjectId = null,
+  mainProjectName = null
 ) {
   // ─── 4.1 حفظ السجلات المحذوفة (داخلية + متقاطعة) ───
   const allDeleted = [
@@ -100,6 +102,8 @@ export async function processStep4_Save(
       ...r,
       projectId,
       projectName,
+      mainProjectId,
+      mainProjectName,
       deletionType: 'internal',
       importedBy: currentUser?.uid || 'unknown',
       importedByName: currentUserData?.name || 'غير معروف'
@@ -108,6 +112,8 @@ export async function processStep4_Save(
       ...r,
       projectId,
       projectName,
+      mainProjectId,
+      mainProjectName,
       deletionType: 'cross',
       importedBy: currentUser?.uid || 'unknown',
       importedByName: currentUserData?.name || 'غير معروف'
@@ -133,13 +139,17 @@ export async function processStep4_Save(
     benefitUpdates.push({
       beneficiaryId: existingBeneficiary.id,
       projectId,
-      projectName
+      projectName,
+      mainProjectId,
+      mainProjectName
     });
 
     addedBenefitRecords.push({
       beneficiaryId: existingBeneficiary.id,
       projectId,
       projectName,
+      mainProjectId,
+      mainProjectName,
       record,
       matchReason,
       previousProjects: existingBeneficiary.projectNames || [],
@@ -181,6 +191,8 @@ export async function processStep4_Save(
       tempId: `temp_${index}`,
       projectIds: [projectId],
       projectNames: [projectName],
+      mainProjectIds: mainProjectId ? [mainProjectId] : [],
+      mainProjectNames: mainProjectName ? [mainProjectName] : [],
       firstBenefitDate: new Date(),
       lastBenefitDate: new Date(),
       importedBy: currentUser?.uid || 'unknown',
@@ -210,6 +222,8 @@ export async function processStep4_Save(
         beneficiaryId,
         projectId,
         projectName,
+        mainProjectId,
+        mainProjectName,
         record,
         importedBy: currentUser?.uid || 'unknown',
         importedByName: currentUserData?.name || 'غير معروف'
@@ -258,7 +272,7 @@ export async function processStep4_Save(
 // الدالة الرئيسية للاستيراد الكامل
 // selectedProjectIds: المشاريع المحددة للمقارنة (فارغة = لا مقارنة)
 // ======================================================
-export async function importProject(projectId, projectName, file, onProgress, selectedProjectIds = []) {
+export async function importProject(projectId, projectName, file, onProgress, selectedProjectIds = [], mainProjectId = null, mainProjectName = null) {
   onProgress?.({ step: 1, message: 'جاري قراءة ملف Excel...', percent: 10 });
 
   // 1. قراءة الملف
@@ -301,7 +315,9 @@ export async function importProject(projectId, projectName, file, onProgress, se
     step3.crossDuplicates,
     step3.benefitAdditions,
     totalStats,
-    onProgress
+    onProgress,
+    mainProjectId,
+    mainProjectName
   );
 
   onProgress?.({ step: 6, message: 'اكتمل الاستيراد بنجاح!', percent: 100 });
