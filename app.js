@@ -7,7 +7,6 @@ import { BeneficiaryDB, ProjectDB, BenefitDB, DeletedRecordDB, AuditDB, UserDB, 
 import { importProject, exportProjectErrors } from './import.js';
 import { ExcelExport, PDFExport } from './reports.js';
 import { renderProjectsChart, renderDuplicatesChart, renderTrendChart, destroyAllCharts } from './charts.js';
-import { securityGuard, validateInputs } from './security.js';
 
 // ======================================================
 // الحالة العامة
@@ -445,15 +444,13 @@ async function renderFilePreview(file) {
 
 // بدء الاستيراد
 window.startImport = async function () {
+  if (!hasPermission('canImport')) {
+    showToast('ليس لديك صلاحية الاستيراد', 'error'); return;
+  }
+
   const projectName = document.getElementById('project-name')?.value?.trim();
   const fileInput = document.getElementById('project-file');
   const file = fileInput?.files[0];
-
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canImport', { 'اسم المشروع': projectName || '' });
-  if (!guard.allowed) {
-    showToast(guard.reason, 'error'); return;
-  }
 
   if (!projectName) { showToast('يرجى إدخال اسم المشروع', 'error'); return; }
   if (!file) { showToast('يرجى اختيار ملف Excel', 'error'); return; }
@@ -780,10 +777,7 @@ window.viewBeneficiary = async function (id) {
 // تعديل مستفيد
 // ======================================================
 window.editBeneficiary = async function (id) {
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canEdit');
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
-
+  if (!hasPermission('canEdit')) { showToast('ليس لديك صلاحية التعديل', 'error'); return; }
   const b = await BeneficiaryDB.getById(id);
   if (!b) { showToast('لم يتم العثور على المستفيد', 'error'); return; }
 
@@ -817,22 +811,13 @@ window.editBeneficiary = async function (id) {
 
 window.saveEditBeneficiary = async function (e, id) {
   e.preventDefault();
-  const data = {
-    fullName: document.getElementById('edit-fullName').value.trim(),
-    phone: document.getElementById('edit-phone').value.trim(),
-    familySize: parseInt(document.getElementById('edit-familySize').value) || 0,
-    campName: document.getElementById('edit-campName').value.trim()
-  };
-
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canEdit', {
-    'الاسم الرباعي': data.fullName,
-    'رقم الجوال': data.phone,
-    'اسم المخيم': data.campName
-  });
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
-
   try {
+    const data = {
+      fullName: document.getElementById('edit-fullName').value.trim(),
+      phone: document.getElementById('edit-phone').value.trim(),
+      familySize: parseInt(document.getElementById('edit-familySize').value) || 0,
+      campName: document.getElementById('edit-campName').value.trim()
+    };
     await BeneficiaryDB.update(id, data);
     await AuditDB.log('EDIT_BENEFICIARY', 'beneficiary', id, currentUser?.uid, currentUser?.email, data);
     showToast('تم تحديث بيانات المستفيد', 'success');
@@ -847,10 +832,7 @@ window.saveEditBeneficiary = async function (e, id) {
 // حذف مستفيد
 // ======================================================
 window.deleteBeneficiary = async function (id) {
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canDelete');
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
-
+  if (!hasPermission('canDelete')) { showToast('ليس لديك صلاحية الحذف', 'error'); return; }
   const confirmed = await showConfirm('هل أنت متأكد من حذف هذا المستفيد؟ لا يمكن التراجع عن هذه العملية.');
   if (!confirmed) return;
   try {
@@ -924,11 +906,6 @@ window.editProject = async function (id) {
 window.saveEditProject = async function (e, id) {
   e.preventDefault();
   const name = document.getElementById('edit-project-name').value.trim();
-
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canEdit', { 'اسم المشروع': name });
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
-
   try {
     await ProjectDB.update(id, { name });
     await AuditDB.log('EDIT_PROJECT', 'project', id, currentUser?.uid, currentUser?.email, { name });
@@ -941,9 +918,7 @@ window.saveEditProject = async function (e, id) {
 };
 
 window.deleteProject = async function (id) {
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canDelete');
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
+  if (!hasPermission('canDelete')) { showToast('ليس لديك صلاحية الحذف', 'error'); return; }
 
   const p = await ProjectDB.getById(id);
   if (!p) { showToast('المشروع غير موجود', 'error'); return; }
@@ -1118,16 +1093,11 @@ window.showAddUserForm = function () {
 
 window.submitAddUser = async function (e) {
   e.preventDefault();
-  const name = document.getElementById('new-user-name').value.trim();
-  const email = document.getElementById('new-user-email').value.trim();
-  const password = document.getElementById('new-user-password').value;
-  const role = document.getElementById('new-user-role').value;
-
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canManageUsers', { 'الاسم': name, 'البريد الإلكتروني': email });
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
-
   try {
+    const name = document.getElementById('new-user-name').value.trim();
+    const email = document.getElementById('new-user-email').value.trim();
+    const password = document.getElementById('new-user-password').value;
+    const role = document.getElementById('new-user-role').value;
     await createUser(email, password, name, role);
     showToast('تم إضافة المستخدم بنجاح', 'success');
     closeModal();
@@ -1138,10 +1108,6 @@ window.submitAddUser = async function (e) {
 };
 
 window.toggleUserStatus = async function (id, isActive) {
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canManageUsers');
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
-
   try {
     await UserDB.update(id, { isActive: !isActive });
     showToast(isActive ? 'تم تعطيل الحساب' : 'تم تفعيل الحساب', 'success');
@@ -1417,11 +1383,6 @@ window.submitAddMainProject = async function (e) {
   e.preventDefault();
   const name = document.getElementById('main-project-name')?.value?.trim();
   const description = document.getElementById('main-project-desc')?.value?.trim();
-
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canImport', { 'اسم المشروع': name || '', 'الوصف': description || '' });
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
-
   if (!name) { showToast('يرجى إدخال اسم المشروع', 'error'); return; }
   try {
     await MainProjectDB.add({
@@ -1464,11 +1425,6 @@ window.saveEditMainProject = async function (e, id) {
   e.preventDefault();
   const name = document.getElementById('edit-main-project-name')?.value?.trim();
   const description = document.getElementById('edit-main-project-desc')?.value?.trim();
-
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canEdit', { 'اسم المشروع': name || '', 'الوصف': description || '' });
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
-
   try {
     await MainProjectDB.update(id, { name, description });
     showToast('تم تحديث المشروع', 'success');
@@ -1480,10 +1436,6 @@ window.saveEditMainProject = async function (e, id) {
 };
 
 window.deleteMainProject = async function (id) {
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canDelete');
-  if (!guard.allowed) { showToast(guard.reason, 'error'); return; }
-
   const p = await MainProjectDB.getById(id);
   if (!p) return;
   const confirmed = await showConfirm(`هل تريد حذف المشروع الرئيسي "${p.name}"؟\nلن يتم حذف الملفات الفرعية المرتبطة به، فقط سيتم إزالة المشروع الرئيسي.`);
@@ -1807,6 +1759,7 @@ window.showAddBeneficiaryModal = async function () {
 window.submitAddBeneficiary = async function (e) {
   e.preventDefault();
   const btn = document.getElementById('add-ben-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الفحص...'; }
 
   const fullName = document.getElementById('new-ben-name')?.value?.trim();
   const idNumber = document.getElementById('new-ben-id')?.value?.trim();
@@ -1816,20 +1769,6 @@ window.submitAddBeneficiary = async function (e) {
   const projectSelect = document.getElementById('new-ben-project');
   const projectId = projectSelect?.value;
   const projectName = projectSelect?.options[projectSelect.selectedIndex]?.dataset?.name || '';
-
-  // ── فحص الأمان المركزي ──
-  const guard = securityGuard('canAdd', {
-    'الاسم الرباعي': fullName || '',
-    'رقم الهوية': idNumber || '',
-    'رقم الجوال': phone || '',
-    'اسم المخيم': campName || ''
-  });
-  if (!guard.allowed) {
-    showToast(guard.reason, 'error');
-    return;
-  }
-
-  if (btn) { btn.disabled = true; btn.textContent = 'جاري الفحص...'; }
 
   if (!fullName) { showToast('يرجى إدخال الاسم الرباعي', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة المستفيد'; } return; }
   if (!projectId) { showToast('يرجى اختيار المشروع', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة المستفيد'; } return; }
