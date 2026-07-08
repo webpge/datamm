@@ -201,10 +201,11 @@ export const ProjectDB = {
     });
   },
 
-  async delete(id) {
+  async delete(id, skipMainProjectUpdate = false) {
     // ═══════════════════════════════════════════════
     // حذف شامل: المشروع + الاستفادات + السجلات
     // المحذوفة + تحديث/حذف المستفيدين المرتبطين
+    // + سجلات المراجعة (Audit) → بدون ترك أي أثر
     // ═══════════════════════════════════════════════
 
     // دالة مساعدة: تنفيذ batch بحد أقصى 500 عملية
@@ -216,6 +217,10 @@ export const ProjectDB = {
         await b.commit();
       }
     };
+
+    // 0. جلب بيانات المشروع لمعرفة المشروع الرئيسي
+    const projectSnap = await getDoc(doc(db, COLLECTIONS.PROJECTS, id));
+    const projectData = projectSnap.exists() ? projectSnap.data() : null;
 
     // 1. جلب جميع الاستفادات المرتبطة بالمشروع
     const benefitsSnap = await getDocs(
@@ -232,6 +237,11 @@ export const ProjectDB = {
       query(collection(db, COLLECTIONS.BENEFICIARIES), where('projectIds', 'array-contains', id))
     );
 
+    // 4. جلب جميع سجلات المراجعة المرتبطة بالمشروع
+    const auditSnap = await getDocs(
+      query(collection(db, COLLECTIONS.AUDIT_LOG), where('entityId', '==', id))
+    );
+
     // تجميع كل العمليات
     const ops = [];
 
@@ -241,6 +251,12 @@ export const ProjectDB = {
     // حذف السجلات المحذوفة المرتبطة
     deletedSnap.docs.forEach(d => ops.push(b => b.delete(d.ref)));
 
+    // حذف سجلات المراجعة المرتبطة بالمشروع
+    auditSnap.docs.forEach(d => ops.push(b => b.delete(d.ref)));
+
+    // تجميع أرقام هوية المستفيدين لحذف سجلات المراجعة الخاصة بهم
+    const beneficiaryIdsToFullDelete = [];
+
     // معالجة المستفيدين
     beneficiariesSnap.docs.forEach(d => {
       const data = d.data();
@@ -249,6 +265,7 @@ export const ProjectDB = {
       if (otherProjectIds.length === 0) {
         // المستفيد خاص بهذا المشروع فقط → حذف نهائي
         ops.push(b => b.delete(d.ref));
+        beneficiaryIdsToFullDelete.push(d.id);
       } else {
         // المستفيد له مشاريع أخرى → إزالة هذا المشروع من بياناته فقط
         const projectName = (data.projectNames || []).find(
@@ -264,11 +281,36 @@ export const ProjectDB = {
       }
     });
 
+    // حذف سجلات المراجعة الخاصة بالمستفيدين المحذوفين
+    for (const benId of beneficiaryIdsToFullDelete) {
+      const benAuditSnap = await getDocs(
+        query(collection(db, COLLECTIONS.AUDIT_LOG), where('entityId', '==', benId))
+      );
+      benAuditSnap.docs.forEach(d => ops.push(b => b.delete(d.ref)));
+    }
+
     // حذف وثيقة المشروع نفسه
     ops.push(b => b.delete(doc(db, COLLECTIONS.PROJECTS, id)));
 
     // تنفيذ جميع العمليات على دفعات
     await commitChunked(ops);
+
+    // 5. تحديث إحصائيات المشروع الرئيسي (إن وجد) بإنقاص العداد
+    if (!skipMainProjectUpdate && projectData?.mainProjectId) {
+      try {
+        const mainProjSnap = await getDoc(doc(db, COLLECTIONS.MAIN_PROJECTS, projectData.mainProjectId));
+        if (mainProjSnap.exists()) {
+          const finalCount = projectData.stats?.finalCount || 0;
+          await updateDoc(doc(db, COLLECTIONS.MAIN_PROJECTS, projectData.mainProjectId), {
+            subFilesCount: increment(-1),
+            totalBeneficiaries: increment(-finalCount),
+            updatedAt: serverTimestamp()
+          });
+        }
+      } catch (e) {
+        console.warn('تعذر تحديث إحصائيات المشروع الرئيسي:', e.message);
+      }
+    }
   },
 
 
@@ -423,6 +465,31 @@ export const AuditDB = {
     });
   },
 
+  // حذف جميع سجلات المراجعة المرتبطة بمعرّف كيان محدد
+  async deleteByEntityId(entityId) {
+    const commitChunked = async (ops) => {
+      const CHUNK = 490;
+      for (let i = 0; i < ops.length; i += CHUNK) {
+        const b = writeBatch(db);
+        ops.slice(i, i + CHUNK).forEach(fn => fn(b));
+        await b.commit();
+      }
+    };
+    const snap = await getDocs(
+      query(collection(db, COLLECTIONS.AUDIT_LOG), where('entityId', '==', entityId))
+    );
+    if (snap.empty) return;
+    const ops = snap.docs.map(d => b => b.delete(d.ref));
+    await commitChunked(ops);
+  },
+
+  // حذف سجلات المراجعة لعدة كيانات دفعة واحدة
+  async deleteByEntityIds(entityIds) {
+    for (const eid of entityIds) {
+      await this.deleteByEntityId(eid);
+    }
+  },
+
   async getAll(lim = 100) {
     const snap = await getDocs(
       query(collection(db, COLLECTIONS.AUDIT_LOG), orderBy('timestamp', 'desc'), limit(lim))
@@ -433,7 +500,7 @@ export const AuditDB = {
   onSnapshot(callback) {
     return onSnapshot(
       query(collection(db, COLLECTIONS.AUDIT_LOG), orderBy('timestamp', 'desc'), limit(50)),
-      snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
     );
   }
 };
@@ -523,7 +590,28 @@ export const MainProjectDB = {
   },
 
   async delete(id) {
-    // حذف المشروع الرئيسي فقط (الملفات الفرعية تُدار بشكل مستقل)
+    // ═══════════════════════════════════════════════════════
+    // حذف شامل للمشروع الرئيسي + جميع الملفات الفرعية
+    // وبياناتها (استفادات، مستفيدون، سجلات محذوفة، مراجعات)
+    // بدون ترك أي أثر في قاعدة البيانات
+    // ═══════════════════════════════════════════════════════
+
+    // 1. جلب جميع المشاريع الفرعية المرتبطة بالمشروع الرئيسي
+    const allProjectsSnap = await getDocs(collection(db, COLLECTIONS.PROJECTS));
+    const subProjects = allProjectsSnap.docs
+      .filter(d => d.data().mainProjectId === id)
+      .map(d => ({ id: d.id, ...d.data() }));
+
+    // 2. حذف كل مشروع فرعي مع كامل بياناته (cascade)
+    for (const sub of subProjects) {
+      // skipMainProjectUpdate = true لأننا سنحذف المشروع الرئيسي بالكامل
+      await ProjectDB.delete(sub.id, true);
+    }
+
+    // 3. حذف سجلات المراجعة المرتبطة بالمشروع الرئيسي نفسه
+    await AuditDB.deleteByEntityId(id);
+
+    // 4. حذف وثيقة المشروع الرئيسي
     await deleteDoc(doc(db, COLLECTIONS.MAIN_PROJECTS, id));
   },
 

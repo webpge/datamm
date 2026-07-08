@@ -939,11 +939,7 @@ window.deleteProject = async function (id) {
 
   try {
     await ProjectDB.delete(id);
-    await AuditDB.log('DELETE_PROJECT', 'project', id, currentUser?.uid, currentUser?.email, {
-      projectName: p.name,
-      finalCount: beneficiaryCount
-    });
-    showToast(`تم حذف مشروع "${p.name}" وجميع بياناته بنجاح`, 'success');
+    showToast(`تم حذف مشروع "${p.name}" وجميع بياناته بالكامل بدون ترك أي أثر`, 'success');
     loadProjectsPage();
   } catch (err) {
     showToast('فشل الحذف: ' + err.message, 'error');
@@ -1436,13 +1432,32 @@ window.saveEditMainProject = async function (e, id) {
 };
 
 window.deleteMainProject = async function (id) {
+  if (!hasPermission('canDelete')) { showToast('ليس لديك صلاحية الحذف', 'error'); return; }
+
   const p = await MainProjectDB.getById(id);
-  if (!p) return;
-  const confirmed = await showConfirm(`هل تريد حذف المشروع الرئيسي "${p.name}"؟\nلن يتم حذف الملفات الفرعية المرتبطة به، فقط سيتم إزالة المشروع الرئيسي.`);
+  if (!p) { showToast('المشروع غير موجود', 'error'); return; }
+
+  const subFilesCount = p.subFilesCount || 0;
+  const totalBeneficiaries = p.totalBeneficiaries || 0;
+
+  const confirmed = await showConfirm(
+    `⚠️ تحذير: حذف نهائي شامل لا يمكن التراجع عنه!\n\n` +
+    `سيتم حذف المشروع الرئيسي "${p.name}" وكل ما يرتبط به بالكامل:\n` +
+    `• ${subFilesCount.toLocaleString('ar-SA')} ملف فرعي\n` +
+    `• ${totalBeneficiaries.toLocaleString('ar-SA')} مستفيد (إذا كانوا حصراً في هذا المشروع)\n` +
+    `• جميع سجلات الاستفادة\n` +
+    `• جميع السجلات المحذوفة\n` +
+    `• جميع سجلات المراجعة\n\n` +
+    `لن يبقى أي أثر لهذا المشروع في النظام.\n` +
+    `هل أنت متأكد من الحذف النهائي الشامل؟`
+  );
   if (!confirmed) return;
+
+  showToast('جاري حذف المشروع الرئيسي وجميع ملفاته الفرعية وبياناتها...', 'info');
+
   try {
     await MainProjectDB.delete(id);
-    showToast('تم حذف المشروع الرئيسي', 'success');
+    showToast(`تم حذف المشروع الرئيسي "${p.name}" وجميع بياناته بالكامل بدون ترك أي أثر`, 'success');
     loadMainProjectsPage();
   } catch (err) {
     showToast('فشل الحذف: ' + err.message, 'error');
